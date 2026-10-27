@@ -1136,11 +1136,11 @@ input[type=time]{width:auto;padding:3px 2px}
 }
 
 /* rapporti e compiti come l'originale */
-.rap-riga{padding:4px 8px;gap:8px;border-bottom:1px solid #c0c1c3;align-items:flex-start}
-.rap-riga .sx{flex:0 0 calc(50% - 4px);font-weight:400;min-width:0}
+.rap-riga{padding:4px 8px;gap:2px;border-bottom:1px solid #c0c1c3;align-items:flex-start;flex-wrap:wrap}
+.rap-riga .sx{flex:1 1 100%;font-weight:400;min-width:0}
 .rap-riga .sx strong{font-weight:700}
 .rap-riga .sx .nota{color:var(--testo)}
-.rap-riga .dx{flex:1;min-width:0;padding:2px 0}
+.rap-riga .dx{flex:1 1 100%;min-width:0;padding:0 0 2px 14px}
 .rap-riga .dx .badge{display:inline-block;background:#eee;color:#646464;font-size:13.33px;text-transform:uppercase;padding:0 4px;border-radius:5px;line-height:18px;margin:0 0 2px}
 .rap-riga .dx .campi{margin-left:14px;line-height:20px}
 .rap-riga .dx .et{color:#808080;text-transform:none;font-size:14.67px}
@@ -1286,7 +1286,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.1';
+const APP_VERSIONE = '1.4.2';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
