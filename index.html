@@ -1237,6 +1237,31 @@ body.scuro .cal-mese .mc .e.rapporto{background:#243546;color:var(--testo2);bord
 body.scuro .gruppo{color:var(--giallo-testo)}
 body.scuro #header nav a{color:var(--blu2)}
 
+/* ---------- "Vai a" (v1.4.6): mini-calendario come l'originale ---------- */
+.dlg.vai-a-dlg{max-width:640px}
+.dlg.vai-a-dlg .db{display:flex;justify-content:center;padding:18px 24px 6px}
+.vai-a{background:#fff;border:1px solid #c1c6c8;border-radius:3px;width:100%;max-width:440px;font-size:21px;color:var(--blu);user-select:none}
+.vai-a .va-top{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #c1c6c8}
+.vai-a .va-top b{color:var(--testo);font-weight:700}
+.vai-a .va-top span{cursor:pointer;padding:0 6px}
+.vai-a table{width:100%;border-collapse:collapse;table-layout:fixed;margin-top:6px}
+.vai-a thead th,.vai-a thead td{color:var(--testo);font-weight:400;padding:4px 2px 6px;text-align:center;border-bottom:2px solid var(--testo)}
+.vai-a thead th{width:17%;padding-left:6px}
+.vai-a tbody th{width:17%}
+.vai-a tbody th{font-weight:400;text-align:center;border-right:2px solid var(--testo);cursor:pointer}
+.vai-a tbody td{text-align:center;padding:9px 0;font-weight:700;cursor:pointer}
+.vai-a tbody td.fuori{font-weight:400}
+.vai-a tbody tr.sel th,.vai-a tbody tr.sel td{background:var(--giallo);color:#fff}
+.vai-a tbody tr.sel th{border-right-color:var(--testo)}
+.vai-a tbody td:hover,.vai-a tbody th:hover{background:#e8f1f6}
+.vai-a tbody tr.sel td:hover,.vai-a tbody tr.sel th:hover{background:#d9a21c}
+.vai-a .va-oggi{text-align:center;padding:10px;border-top:2px solid var(--giallo);cursor:pointer}
+.vai-a .va-oggi:hover{background:#e8f1f6}
+body.scuro .vai-a{background:#1c2a38;border-color:#2a3a4a}
+body.scuro .vai-a .va-top,body.scuro .vai-a thead th,body.scuro .vai-a thead td,body.scuro .vai-a tbody th{border-color:#44525f}
+body.scuro .vai-a tbody td:hover,body.scuro .vai-a tbody th:hover,body.scuro .vai-a .va-oggi:hover{background:#243546}
+@media (max-width:760px){.dlg.vai-a-dlg .db{padding:12px 8px 4px}.vai-a{font-size:17px}.vai-a tbody td{padding:7px 0}.vai-a thead th,.vai-a tbody th{width:16%}}
+
 /* ---------- SMARTPHONE (v1.4.4): tutto leggibile, niente tagli ---------- */
 @media (max-width:760px){
   html,body{font-size:13.33px}
@@ -1407,7 +1432,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.5';
+const APP_VERSIONE = '1.4.6';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -2656,7 +2681,7 @@ RENDER.calendario = () => {
   if (cfg.periodo === 'giorno') { giorni = [statoCal.data]; titolo = `${GIORNI_LUNGHI[d.getDay()]} ${pad(d.getDate())} ${MESI_BREVI[d.getMonth()]} ${d.getFullYear()}`; }
   else if (cfg.periodo === 'settimana') { const lun = lunediDi(statoCal.data); giorni = [0, 1, 2, 3, 4].map(i => addGiorni(lun, i)); if (DB.settings.orario[6] || DB.settings.orario[0]) giorni.push(addGiorni(lun, 5)); if (DB.settings.orario[0]) giorni.push(addGiorni(lun, 6)); const a = daIso(giorni[0]), b = daIso(giorni[giorni.length - 1]); titolo = `Sett. ${settimanaISO(a)} | ${a.getDate()} - ${b.getDate()} ${MESI_BREVI[b.getMonth()]}${a.getMonth() !== b.getMonth() ? ' ' + b.getFullYear() : ''}`; }
   else { titolo = `${MESI_LUNGHI[d.getMonth()]} ${d.getFullYear()}`; }
-  let html = `<div class="cal-top"><div class="nav"><span data-azione="cal-prec">&lsaquo;</span><span data-azione="cal-succ">&rsaquo;</span></div><div class="periodo" data-azione="cal-oggi" title="Vai a oggi">${esc(titolo)} &#9662;</div><button class="btn-contorno" data-azione="cal-nuovo-app">${ico('piu')} Nuovo appuntamento</button><button class="map-btn chiaro" style="position:static" data-azione="cal-lista-app" title="Elenco appuntamenti">${ico('lista')}</button><button class="map-btn chiaro" style="position:static" data-azione="cal-opzioni" title="Opzioni">${ico('ingranaggio')}</button></div>`;
+  let html = `<div class="cal-top"><div class="nav"><span data-azione="cal-prec">&lsaquo;</span><span data-azione="cal-succ">&rsaquo;</span></div><div class="periodo" data-azione="cal-vai-a" title="Vai a">${esc(titolo)} &#9662;</div><button class="btn-contorno" data-azione="cal-nuovo-app">${ico('piu')} Nuovo appuntamento</button><button class="map-btn chiaro" style="position:static" data-azione="cal-lista-app" title="Elenco appuntamenti">${ico('lista')}</button><button class="map-btn chiaro" style="position:static" data-azione="cal-opzioni" title="Opzioni">${ico('ingranaggio')}</button></div>`;
   if (cfg.periodo === 'mese') { v.innerHTML = html + renderMese(d); return; }
   // griglia oraria
   const scala = cfg.scala || 30; const ph = (scala === 15 ? 22 : 34) * (cfg.altezza === 'doppia' ? 2 : 1); // px per slot
@@ -2699,6 +2724,27 @@ RENDER.calendario = () => {
     col.addEventListener('dblclick', e => { if (e.target !== col) return; const r = col.getBoundingClientRect(); const min = oraMinG + Math.floor(((e.clientY - r.top) / ph * scala) / scala) * scala; dialogAppuntamento({ data: col.dataset.g, inizio: minOra(min), fine: minOra(min + 30) }); });
   });
 };
+// ----- dialogo "Vai a" (mini-calendario come l'originale) -----
+const statoVaiA = { mese: null };
+function htmlVaiA() {
+  const m = daIso(statoVaiA.mese); const y = m.getFullYear(), mo = m.getMonth();
+  const oggi = oggiIso(); const lunSel = lunediDi(statoCal.data);
+  let g = lunediDi(isoData(new Date(y, mo, 1))); let righe = '';
+  for (let r = 0; r < 6; r++) {
+    const d0 = daIso(g); const sel = g === lunSel;
+    let celle = '';
+    for (let i = 0; i < 7; i++) { const iso = addGiorni(g, i); const d = daIso(iso); const fuori = d.getMonth() !== mo; celle += `<td class="${fuori ? 'fuori' : ''}${iso === oggi ? ' oggi' : ''}" data-azione="va-giorno" data-g="${iso}">${d.getDate()}</td>`; }
+    righe += `<tr class="${sel ? 'sel' : ''}"><th data-azione="va-giorno" data-g="${g}">${settimanaISO(d0)}</th>${celle}</tr>`;
+    g = addGiorni(g, 7);
+  }
+  return `<div class="vai-a"><div class="va-top"><span data-azione="va-mese" data-delta="-1">&lt;&lt;</span><b>${MESI_LUNGHI[mo]} ${y}</b><span data-azione="va-mese" data-delta="1">&gt;&gt;</span></div><table><thead><tr><th>Sett.</th>${['lu', 'ma', 'me', 'gi', 've', 'sa', 'do'].map(s => `<td>${s}</td>`).join('')}</tr></thead><tbody>${righe}</tbody></table><div class="va-oggi" data-azione="va-oggi">Oggi</div></div>`;
+}
+function renderVaiA() { const el = $('#va-corpo'); if (el) el.innerHTML = htmlVaiA(); }
+function dialogVaiA() {
+  const d = daIso(statoCal.data); statoVaiA.mese = isoData(new Date(d.getFullYear(), d.getMonth(), 1));
+  apriDialog({ titolo: 'Vai a', corpo: `<div id="va-corpo">${htmlVaiA()}</div>`, classe: 'vai-a-dlg', aiuto: 'Scegli il giorno o la settimana da visualizzare nel calendario.', pulsanti: [{ testo: 'Annulla', cls: 'btn-grigio' }] });
+}
+
 function renderMese(d) {
   const primo = new Date(d.getFullYear(), d.getMonth(), 1); const inizio = lunediDi(isoData(primo));
   const conWeekend = !!(DB.settings.orario[6] || DB.settings.orario[0]); const ng = conWeekend ? 7 : 5;
@@ -2724,6 +2770,10 @@ Object.assign(AZIONI, {
   'cal-prec': () => { const p = DB.settings.calendario.periodo; if (p === 'mese') { const d = daIso(statoCal.data); statoCal.data = isoData(new Date(d.getFullYear(), d.getMonth() - 1, 1)); } else statoCal.data = addGiorni(statoCal.data, p === 'giorno' ? -1 : -7); RENDER.calendario(); },
   'cal-succ': () => { const p = DB.settings.calendario.periodo; if (p === 'mese') { const d = daIso(statoCal.data); statoCal.data = isoData(new Date(d.getFullYear(), d.getMonth() + 1, 1)); } else statoCal.data = addGiorni(statoCal.data, p === 'giorno' ? 1 : 7); RENDER.calendario(); },
   'cal-oggi': () => { statoCal.data = oggiIso(); RENDER.calendario(); },
+  'cal-vai-a': () => dialogVaiA(),
+  'va-mese': el => { const m = daIso(statoVaiA.mese); statoVaiA.mese = isoData(new Date(m.getFullYear(), m.getMonth() + (+el.dataset.delta), 1)); renderVaiA(); },
+  'va-giorno': el => { statoCal.data = el.dataset.g; chiudiDialog(el.closest('.dlg')); RENDER.calendario(); },
+  'va-oggi': el => { statoCal.data = oggiIso(); chiudiDialog(el.closest('.dlg')); RENDER.calendario(); },
   'cal-nuovo-app': () => dialogAppuntamento({ data: statoCal.data }),
   'cal-app': el => { const a = DB.appuntamenti.find(x => x.id === el.dataset.id); if (a) dialogAppuntamento(a); },
   'cal-rap': el => { const r = DB.rapporti.find(x => x.id === el.dataset.id); if (r) dialogRapporto(cliente(r.clienteId), r); },
