@@ -1238,6 +1238,35 @@ body.scuro .cal-mese .mc .e.rapporto{background:#243546;color:var(--testo2);bord
 body.scuro .gruppo{color:var(--giallo-testo)}
 body.scuro #header nav a{color:var(--blu2)}
 
+
+/* ---------- Rapporti in schede (v1.4.12), ripreso da Gestione Fatturato ---------- */
+.rap-schede{padding:10px 12px 4px;--s1:#2a78d6;--s3:#1baf7a;--s4:#eda100;--ink2:#4a565f;--ink3:#7a8791;--line:#dbe2e8}
+.rap-scheda{position:relative;background:#fff;border:1px solid var(--line);border-radius:10px;padding:15px 17px;margin-bottom:11px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.rap-scheda:hover{border-color:#b9c6d2}
+.rap-scheda .rp-sel{position:absolute;right:12px;top:12px}
+.rap-scheda .rs-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:1.05rem;padding-right:28px}
+.rap-scheda .rs-d{font-weight:700;font-variant-numeric:tabular-nums}
+.rap-scheda .rs-ora{color:var(--ink3);font-size:0.95rem;font-variant-numeric:tabular-nums}
+.rap-scheda .rs-cli{color:var(--blu);font-weight:600;margin-left:auto}
+.rap-scheda .pill{display:inline-flex;align-items:center;gap:5px;font-size:0.86rem;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.03em;white-space:nowrap;line-height:1.55;background:#eef3f6;color:var(--ink2)}
+.rap-scheda .pill.tipo{background:#e4edf7;color:var(--blu)}
+.rap-scheda .pill{max-width:100%;white-space:normal}
+.rap-scheda .pill.link a{color:var(--blu);text-decoration:none}
+.rap-scheda .rs-f{min-width:0}
+.rap-scheda .rs-f .vv{overflow-wrap:anywhere}
+.rap-scheda .pill .pk{font-weight:400;color:var(--ink3)}
+.rap-scheda .pill .pk::after{content:":"}
+.rap-scheda .rs-o{font-size:1.27rem;font-weight:500;margin-top:10px;line-height:1.55;max-width:120ch}
+.rap-scheda .rs-c{margin-top:11px;display:grid;gap:11px}
+.rap-scheda .rs-f{border-left:3px solid var(--rc,var(--ink2));padding:1px 0 2px 12px}
+.rap-scheda .rs-f>em{display:block;font-style:normal;font-size:0.9rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--rc,var(--ink2));margin:0 0 5px}
+.rap-scheda .rs-f .vv{display:block;font-size:clamp(1.1rem,1.15vw,1.3rem);line-height:1.8;max-width:120ch;white-space:pre-wrap;text-align:left;hyphens:manual}
+.rs-f-ob{--rc:var(--s1)} .rs-f-inf{--rc:var(--ink2)} .rs-f-az{--rc:var(--s3)} .rs-f-nt{--rc:var(--s4)}
+body.scuro .rap-schede{--ink2:#a6b2ba;--ink3:#76828b;--line:#2a3238}
+body.scuro .rap-scheda{background:#161a1d}
+body.scuro .rap-scheda .pill{background:#222930}
+body.scuro .rap-scheda .pill.tipo{background:#1f3447;color:var(--blu2)}
+@media (max-width:760px){.rap-schede{padding:6px 6px 2px}.rap-scheda{padding:12px 12px;border-radius:8px}.rap-scheda .rs-f .vv{font-size:1.05rem;line-height:1.65}.rap-scheda .rs-o{font-size:1.12rem}.rap-scheda .rs-cli{margin-left:0;flex-basis:100%}}
 /* ---------- Switch a due posizioni (v1.4.9) ---------- */
 .switch2{display:inline-flex;border:1px solid var(--blu);border-radius:4px;overflow:hidden;user-select:none}
 .switch2 span{padding:7px 16px;cursor:pointer;color:var(--blu);background:#fff;font-weight:600}
@@ -1445,7 +1474,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.11';
+const APP_VERSIONE = '1.4.12';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -2932,6 +2961,26 @@ function dialogCompito(dati) {
 /* ====================================================================
    RAPPORTI
 ==================================================================== */
+
+/* ---------- vista "Schede" dei rapporti (stile Gestione Fatturato) ---------- */
+function tintaCampoRapporto(nome) { const n = (nome || '').toLowerCase(); if (/ob+iettivo/.test(n)) return 'ob'; if (/azione/.test(n)) return 'az'; if (/note? report|^nota|annotazion/.test(n)) return 'nt'; return 'inf'; }
+function htmlRapportoScheda(r, c, mostraCliente) {
+  const pers = campiPersonalizzatiAttivi();
+  const gruppi = pers ? DB.settings.gruppi.rapporti.filter(g => !/^GESTIONE CLIENTI/i.test(g.nome)) : [];
+  const pill = [], sez = []; let info = [];
+  const pieno = v => v != null && v !== '' && !(Array.isArray(v) && !v.length);
+  gruppi.forEach(g => campiDelGruppo('rapporti', g.id).filter(f => f.modalita !== 'Nascondi' && r.custom && pieno(r.custom[f.id])).forEach(f => {
+    const v = r.custom[f.id];
+    if (f.tipo === 'Testo di più righe' || (f.tipo === 'Testo' && String(v).length > 60)) {
+      if (/^info\s*\d*$/i.test(f.nome.trim())) info.push(String(v)); else sez.push({ nome: f.nome, tinta: tintaCampoRapporto(f.nome), html: esc(String(v)) });
+    } else if (f.tipo === 'Link' || f.tipo === 'File esterno' || f.tipo === 'File esterni') pill.push(`<span class="pill link">${f.tipo === 'File esterni' ? htmlCustom(f, v) : `<a href="${esc(/^https?:/i.test(String(v)) ? String(v) : 'https://' + v)}" target="_blank">${esc(f.nome.replace(/^[^\w]+/, '').trim() || 'Link')} ↗</a>`}</span>`);
+    else pill.push(`<span class="pill">${/^-$/.test(f.nome.trim()) ? '' : `<span class="pk">${esc(f.nome)}</span>`}${htmlCustom(f, v)}</span>`);
+  }));
+  if (info.length) { const i = sez.findIndex(s => s.tinta === 'ob'); sez.splice(i >= 0 ? i + 1 : 0, 0, { nome: 'Informazioni', tinta: 'inf', html: info.map(esc).join('\n\n') }); }
+  const sel = statoRapporti.selezione ? `<span class="rp-sel"><input type="checkbox" data-azione="rp-sel" data-id="${r.id}" ${statoRapporti.selezionati.has(r.id) ? 'checked' : ''}></span>` : '';
+  return `<div class="rap-scheda" data-azione="rp-apri" data-id="${r.id}">${sel}<div class="rs-h"><span class="rs-d">${fmtData(r.data)}</span>${r.inizio ? `<span class="rs-ora">${esc(fmtOra(oraMin(r.inizio)))}${r.fine ? ' – ' + esc(fmtOra(oraMin(r.fine))) : ''}</span>` : ''}<span class="pill tipo">${esc(r.oggetto || '—')}</span>${pill.join('')}${mostraCliente && c ? `<span class="rs-cli">${esc(nomeConSimbolo(c))}</span>` : ''}</div>${r.nota ? `<div class="rs-o">${esc(r.nota)}</div>` : ''}${sez.length ? `<div class="rs-c">${sez.map(s => `<div class="rs-f rs-f-${s.tinta}"><em>${esc(s.nome)}</em><span class="vv">${s.html}</span></div>`).join('')}</div>` : ''}${r.promemoria ? `<div class="rs-f rs-f-nt" style="margin-top:8px"><em>Promemoria</em><span class="vv">${esc(r.promemoria)}</span></div>` : ''}</div>`;
+}
+function vistaRapportiSchede() { return (DB.settings.vistaRapporti || 'schede') === 'schede'; }
 const statoRapporti = { clienteId: null, limite: 300, selezione: false, selezionati: new Set() };
 RENDER.rapporti = () => {
   const v = $('#vista-rapporti');
@@ -2944,12 +2993,16 @@ RENDER.rapporti = () => {
   if (!tot) html += '<div class="vuoto">Nessun rapporto. I rapporti si creano con "Appena visitato" dall\'agenda o dalla scheda cliente.</div>';
   let gruppo = null;
   const gruppiR = DB.settings.gruppi.rapporti;
+  const schede = vistaRapportiSchede(); if (schede) html += '<div class="rap-schede">';
   lista.forEach(r => {
-    const c = cliente(r.clienteId); if (r.data !== gruppo) { gruppo = r.data; html += `<div class="gruppo">${fmtData(r.data)}</div>`; }
+    const c = cliente(r.clienteId);
+    if (schede) { html += htmlRapportoScheda(r, c, !statoRapporti.clienteId); return; }
+    if (r.data !== gruppo) { gruppo = r.data; html += `<div class="gruppo">${fmtData(r.data)}</div>`; }
     const dx = gruppiR.filter(g => !/^GESTIONE CLIENTI/i.test(g.nome)).map(g => { const campi = campiDelGruppo('rapporti', g.id).filter(f => f.modalita !== 'Nascondi' && r.custom && r.custom[f.id] != null && r.custom[f.id] !== '' && !(Array.isArray(r.custom[f.id]) && !r.custom[f.id].length)); if (!campi.length) return ''; return `<span class="badge">${esc(g.nome)}</span><div class="campi">${campi.map(f => `<span class="et">${esc(f.nome)}: </span>${htmlCustom(f, r.custom[f.id])}`).join('<br>')}</div>`; }).join('');
     const sel = statoRapporti.selezione ? `<span class="rp-sel"><input type="checkbox" data-azione="rp-sel" data-id="${r.id}" ${statoRapporti.selezionati.has(r.id) ? 'checked' : ''}></span>` : '';
     html += `<div class="rap-riga" data-azione="rp-apri" data-id="${r.id}">${sel}<div class="sx"><strong>${esc(r.oggetto)}${c ? ` (${esc(nomeConSimbolo(c))})` : ''}</strong>${r.nota ? `<div class="nota">${esc(r.nota)}</div>` : ''}</div><div class="dx">${dx}</div></div>`;
   });
+  if (schede) html += '</div>';
   if (tot) html += `<div class="rp-piede">${tot > lista.length ? `<a data-azione="rp-mostra" data-n="${statoRapporti.limite + 300}" style="cursor:pointer">Mostra le prime ${fmtNum(Math.min(tot, statoRapporti.limite + 300))}...</a> | <a data-azione="rp-mostra" data-n="100000" style="cursor:pointer">Mostra tutti i ${fmtNum(tot)}...</a>` : `Tutti i ${fmtNum(tot)} rapporti`}</div>
   <div class="btn-azioni">${statoRapporti.selezione ? `<button class="btn-contorno" data-azione="rp-sel-off">Termina selezione</button> <button class="btn-pieno" data-azione="rp-elimina-sel">Elimina selezionati (${statoRapporti.selezionati.size})</button>` : `<button class="btn-contorno" data-azione="rp-sel-on">Attiva selezione</button> <button class="btn-contorno" data-azione="rp-elimina-tutti">Elimina tutti i ${fmtNum(tot)}</button>`}</div>`;
   html += `</div>`;
@@ -3065,8 +3118,8 @@ Object.assign(AZIONI, {
   'op-pernottamento': () => { const p = DB.settings.pernottamento; apriDialog({ titolo: 'Pernottamento', aiuto: 'Nei giorni autorizzati, se l\'ultimo cliente è più lontano della distanza minima, l\'agenda prevede il pernottamento e il giorno dopo riparte da lì.', corpo: `<div class="sez">Autorizza il</div><div class="inline">${[1, 2, 3, 4, 5, 6, 0].map(g => `<label><input type="checkbox" class="pn-g" value="${g}" ${p.giorni.includes(g) ? 'checked' : ''}> ${GIORNI_BREVI[g]}</label>`).join('')}</div><div class="sez">Distanza minima</div><div class="inline">${inp('pn-km', p.kmMin, 'number')} km o ${inp('pn-min', p.minMin, 'number')} minuti dal domicilio</div><div class="sez">Alloggi preferiti</div><div class="inline">Se raggiungibile entro ${inp('pn-al', p.alloggiMin, 'number')} minuti</div><div class="centro" style="margin-top:8px"><button class="btn-contorno" data-azione="op-alloggi">Gestisci alloggi preferiti</button></div>`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { p.giorni = $$('.pn-g:checked', d).map(x => +x.value); p.kmMin = valNum(d, 'pn-km') || 120; p.minMin = valNum(d, 'pn-min') || 120; p.alloggiMin = valNum(d, 'pn-al') || 45; salvaDB(); } }, { testo: 'Annulla', cls: 'btn-grigio' }] }); },
   'op-domicilio': () => dialogDomicilio(),
   'op-velocita': () => { const v = DB.settings.velocita; apriDialog({ titolo: 'Velocità di guida', aiuto: 'I tempi di viaggio sono stimati in linea d\'aria moltiplicata per il fattore strada, alla velocità media indicata.', corpo: `${campo('Velocità media:', `<div class="inline">${inp('vg-kmh', v.kmh, 'number', 'min="10"')} km/h</div>`)}${campo('Fattore strada:', `<div class="inline">${inp('vg-f', v.fattore, 'number', 'min="1" step="0.05"')} (1,3 = strada 30% più lunga della linea d'aria)</div>`)}${campo('Percorso su strada:', `<label><input type="checkbox" id="vg-osrm" ${DB.settings.ottimizzazione.percorsoStrada ? 'checked' : ''}> disegna il percorso reale sulla mappa (richiede internet)</label>`)}<div class="sez">Traffico in tempo reale</div>${campo('API Key TomTom:', inp('vg-tt', DB.settings.tomtomKey || '', 'text'))}<div class="testo-piccolo">Chiave gratuita da developer.tomtom.com (2.500 richieste/giorno): attiva il pulsante "traffico" sulle mappe.</div>`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { v.kmh = valNum(d, 'vg-kmh') || 55; v.fattore = valNum(d, 'vg-f') || 1.3; DB.settings.ottimizzazione.percorsoStrada = val(d, 'vg-osrm'); DB.settings.tomtomKey = val(d, 'vg-tt'); salvaDB(); } }, { testo: 'Annulla', cls: 'btn-grigio' }] }); },
-  'op-programma': () => { const s = DB.settings; apriDialog({ titolo: 'Impostazioni programma', corpo: `${campo('Categorie:', inp('ip-cat', s.categorie.join(', ')))}${campo('Tipi cliente:', inp('ip-tipi', s.tipi.join(', ')))}<div class="testo-piccolo">Valori separati da virgola.</div><div class="sez">Aspetto</div>${campo('Tema:', sel('ip-tema', [['chiaro', 'Chiaro'], ['scuro', 'Scuro'], ['auto', 'Automatico (come il sistema)']], s.tema || 'chiaro'))}${campo('Campi personalizzati:', `<div class="switch2" id="ip-campi" data-v="${s.vistaCampi || 'personalizzato'}"><span data-azione="ip-campi-sw" data-v="default" class="${(s.vistaCampi || 'personalizzato') === 'default' ? 'on' : ''}">Default</span><span data-azione="ip-campi-sw" data-v="personalizzato" class="${(s.vistaCampi || 'personalizzato') !== 'default' ? 'on' : ''}">Personalizzato</span></div><div class="testo-piccolo">Default: solo i campi nativi dell'app. Personalizzato: anche tutti i campi e gruppi aggiunti dall'utente. I dati nascosti non vengono persi.</div>`)}${campo('Dimensione testo:', `<div class="ip-testo"><button type="button" class="btn-grigio" data-azione="ip-testo-meno" title="Diminuisci">&minus;</button><b id="ip-testo-v">${testoPct()} %</b><button type="button" class="btn-grigio" data-azione="ip-testo-piu" title="Aumenta">+</button><span class="anteprima">anteprima immediata · da ${TESTO_MIN} a ${testoMax()} % su questo dispositivo</span></div>`)}<div class="sez">Agenda</div>${campo('Giorni da pianificare:', inp('ip-giorni', s.ottimizzazione.giorniAgenda, 'number'))}${campo('Soglia urgenza:', `<div class="inline">${inp('ip-soglia', s.ottimizzazione.sogliaUrgenza, 'number')} %</div>`)}`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { s.categorie = val(d, 'ip-cat').split(',').map(x => x.trim()).filter(Boolean); s.tipi = val(d, 'ip-tipi').split(',').map(x => x.trim()).filter(Boolean); s.ottimizzazione.giorniAgenda = valNum(d, 'ip-giorni') || 5; s.ottimizzazione.sogliaUrgenza = valNum(d, 'ip-soglia') || 80; s.tema = val(d, 'ip-tema'); salvaTesto(parseInt($('#ip-testo-v', d).textContent) || testoDefault()); s.vistaCampi = $('#ip-campi', d).dataset.v; salvaDB(); applicaTema(); rinfresca(); } }, { testo: 'Annulla', cls: 'btn-grigio', azione: () => applicaTesto() }] }); },
-  'ip-campi-sw': el => { const sw = el.closest('.switch2'); sw.dataset.v = el.dataset.v; $$('span', sw).forEach(x => x.classList.toggle('on', x === el)); },
+  'op-programma': () => { const s = DB.settings; apriDialog({ titolo: 'Impostazioni programma', corpo: `${campo('Categorie:', inp('ip-cat', s.categorie.join(', ')))}${campo('Tipi cliente:', inp('ip-tipi', s.tipi.join(', ')))}<div class="testo-piccolo">Valori separati da virgola.</div><div class="sez">Aspetto</div>${campo('Tema:', sel('ip-tema', [['chiaro', 'Chiaro'], ['scuro', 'Scuro'], ['auto', 'Automatico (come il sistema)']], s.tema || 'chiaro'))}${campo('Rapporti:', `<div class="switch2" id="ip-rapporti" data-v="${s.vistaRapporti || 'schede'}"><span data-azione="ip-sw" data-v="classica" class="${(s.vistaRapporti || 'schede') === 'classica' ? 'on' : ''}">Classica</span><span data-azione="ip-sw" data-v="schede" class="${(s.vistaRapporti || 'schede') === 'schede' ? 'on' : ''}">Schede</span></div><div class="testo-piccolo">Classica: elenco compatto come l'originale. Schede: una scheda per rapporto con Obiettivo / Informazioni / Azione / Note evidenziati a colori.</div>`)}${campo('Campi personalizzati:', `<div class="switch2" id="ip-campi" data-v="${s.vistaCampi || 'personalizzato'}"><span data-azione="ip-sw" data-v="default" class="${(s.vistaCampi || 'personalizzato') === 'default' ? 'on' : ''}">Default</span><span data-azione="ip-sw" data-v="personalizzato" class="${(s.vistaCampi || 'personalizzato') !== 'default' ? 'on' : ''}">Personalizzato</span></div><div class="testo-piccolo">Default: solo i campi nativi dell'app. Personalizzato: anche tutti i campi e gruppi aggiunti dall'utente. I dati nascosti non vengono persi.</div>`)}${campo('Dimensione testo:', `<div class="ip-testo"><button type="button" class="btn-grigio" data-azione="ip-testo-meno" title="Diminuisci">&minus;</button><b id="ip-testo-v">${testoPct()} %</b><button type="button" class="btn-grigio" data-azione="ip-testo-piu" title="Aumenta">+</button><span class="anteprima">anteprima immediata · da ${TESTO_MIN} a ${testoMax()} % su questo dispositivo</span></div>`)}<div class="sez">Agenda</div>${campo('Giorni da pianificare:', inp('ip-giorni', s.ottimizzazione.giorniAgenda, 'number'))}${campo('Soglia urgenza:', `<div class="inline">${inp('ip-soglia', s.ottimizzazione.sogliaUrgenza, 'number')} %</div>`)}`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { s.categorie = val(d, 'ip-cat').split(',').map(x => x.trim()).filter(Boolean); s.tipi = val(d, 'ip-tipi').split(',').map(x => x.trim()).filter(Boolean); s.ottimizzazione.giorniAgenda = valNum(d, 'ip-giorni') || 5; s.ottimizzazione.sogliaUrgenza = valNum(d, 'ip-soglia') || 80; s.tema = val(d, 'ip-tema'); salvaTesto(parseInt($('#ip-testo-v', d).textContent) || testoDefault()); s.vistaCampi = $('#ip-campi', d).dataset.v; s.vistaRapporti = $('#ip-rapporti', d).dataset.v; salvaDB(); applicaTema(); rinfresca(); } }, { testo: 'Annulla', cls: 'btn-grigio', azione: () => applicaTesto() }] }); },
+  'ip-sw': el => { const sw = el.closest('.switch2'); sw.dataset.v = el.dataset.v; $$('span', sw).forEach(x => x.classList.toggle('on', x === el)); },
   'ip-testo-meno': el => cambiaTestoAnteprima(-TESTO_PASSO),
   'ip-testo-piu': el => cambiaTestoAnteprima(TESTO_PASSO),
   'op-password': () => avviso('Modifica password', 'Questa versione funziona completamente in locale, senza account: i dati restano nel browser del dispositivo. Non c\'è una password da impostare.'),
