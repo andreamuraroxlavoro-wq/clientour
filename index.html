@@ -1286,7 +1286,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.0';
+const APP_VERSIONE = '1.4.1';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -3069,7 +3069,7 @@ Object.assign(AZIONI, {
    - backend intercambiabili: Google Drive (appDataFolder), cartella sul computer (File System Access), server HTTP
 ==================================================================== */
 /* Client ID OAuth di Google incorporato (se presente, i dispositivi non devono inserirlo) */
-const GOOGLE_CLIENT_ID_PREDEFINITO = '';
+const GOOGLE_CLIENT_ID_PREDEFINITO = '56679645500-a1g1hd09voiigafi280jakjnnd31taea.apps.googleusercontent.com';
 const SYNC_COLL = ['clienti', 'rapporti', 'appuntamenti', 'compiti', 'alloggi', 'cestino'];
 const SYNC_SINGOLI = ['settings', 'agenda', 'inserimenti'];
 const SYNC = { meta: null, backend: null, stato: 'off', messaggio: '', inCorso: false, timer: null, pianTimer: null, token: null, tokenScad: 0, dirHandle: null, ultimoLog: [] };
