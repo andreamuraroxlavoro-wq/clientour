@@ -1479,7 +1479,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.5.1';
+const APP_VERSIONE = '1.5.2';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -1576,6 +1576,8 @@ function sezioniRapporto(r) {
   for (const k in acc) out[k] = acc[k].join('\n\n');
   return out;
 }
+// un cliente è nei «Miei luoghi» se segnato come tale oppure se è un alloggio preferito (gli alloggi sono luoghi personali)
+function inMieiLuoghi(c) { return !!(c && (c.mieiLuoghi || c.alloggio)); }
 function campoMigrato(f) { return f.migrato === true; }
 // Campi personalizzati: 'personalizzato' (predefinito) mostra anche i campi aggiunti dall'utente; 'default' li nasconde nella consultazione (i dati restano salvati, esportati e sincronizzati)
 function campiPersonalizzatiAttivi() { return (DB.settings.vistaCampi || 'personalizzato') !== 'default'; }
@@ -1877,7 +1879,7 @@ function applicaFiltro(c, f) {
   if (f.agenda === 'no' && inAgenda(c.id)) return false;
   if (f.blocco === 'si' && !(c.blocchi || []).length) return false;
   if (f.appuntamento === 'si' && !DB.appuntamenti.some(a => a.clienteId === c.id && a.data >= oggiIso())) return false;
-  if (f.luoghi === 'si' && !c.mieiLuoghi) return false;
+  if (f.luoghi === 'si' && !inMieiLuoghi(c)) return false;
   if (f.alloggio === 'si' && !c.alloggio) return false;
   if (f.categoria && f.categoria !== 'tutti' && c.categoria !== f.categoria) return false;
   if (f.tipo && f.tipo !== 'tutti' && c.tipo !== f.tipo) return false;
@@ -2063,7 +2065,7 @@ RENDER.cliente = p => {
       <div>${(c.nome || '').trim() && nomePersonaCompleto(c) ? `<div>${esc(nomePersonaCompleto(c))}</div>` : ''}${esc(c.via)}<br>${esc([c.cap, c.citta, c.provincia].filter(Boolean).join(' '))}${c.lat == null ? '<br><span class="urg-rosso">Indirizzo non geocodificato</span>' : ''}</div></div>
       <div class="azioni">${tbBtn('mappa', 'Mappa', 'sc-mappa')}${tbBtn('navigazione', 'Navigazione', 'sc-navigazione')}${tbBtn('personaVicini', 'Clienti nelle vicinanze', 'sc-vicini')}</div></div>
     ${infoHtml}${gruppiHtml}
-    <div class="card"><div class="ch">I miei luoghi ${ico('matita', 'matita')}</div><div class="cb">${c.mieiLuoghi ? 'Nei "Miei luoghi"' : 'Non nei "Miei luoghi"'}${c.alloggio ? '<br>Alloggio preferito' : ''}</div></div>
+    <div class="card"><div class="ch">I miei luoghi ${ico('matita', 'matita')}</div><div class="cb">${inMieiLuoghi(c) ? 'Nei "Miei luoghi"' : 'Non nei "Miei luoghi"'}${c.alloggio ? '<br>Alloggio preferito' : ''}</div></div>
   </div>
   <div class="colonna">
     <div class="card"><div class="ch">Visita precedente ${ico('matita', 'matita')}</div><div class="cb">
@@ -2160,7 +2162,7 @@ function dialogInformazioni(c) {
     pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { Object.assign(c, { categoria: val(d, 'd-cat'), tipo: val(d, 'd-tipo'), numeroCliente: val(d, 'd-num'), contatto: val(d, 'd-cont'), telefono: val(d, 'd-tel'), cellulare: val(d, 'd-cell'), email: val(d, 'd-email'), crm: val(d, 'd-crm'), nota: val(d, 'd-nota'), fatturato: valNum(d, 'd-fatt') }); salvaDB(); rinfresca(); } }, { testo: 'Annulla', cls: 'btn-grigio' }]
   });
 }
-function dialogLuoghi(c) { apriDialog({ titolo: 'I miei luoghi', corpo: `<label class="checkbox-riga"><input type="checkbox" id="d-luoghi" ${c.mieiLuoghi ? 'checked' : ''}> Includi nei "Miei luoghi" (punti di riferimento personali sulla mappa)</label><label class="checkbox-riga"><input type="checkbox" id="d-alloggio" ${c.alloggio ? 'checked' : ''}> Alloggio preferito per i pernottamenti</label>`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { c.mieiLuoghi = val(d, 'd-luoghi'); c.alloggio = val(d, 'd-alloggio'); salvaDB(); rinfresca(); } }, { testo: 'Annulla', cls: 'btn-grigio' }] }); }
+function dialogLuoghi(c) { apriDialog({ titolo: 'I miei luoghi', corpo: `<label class="checkbox-riga"><input type="checkbox" id="d-luoghi" ${inMieiLuoghi(c) ? 'checked' : ''}> Includi nei "Miei luoghi" (punti di riferimento personali sulla mappa)</label><label class="checkbox-riga"><input type="checkbox" id="d-alloggio" ${c.alloggio ? 'checked' : ''}> Alloggio preferito per i pernottamenti</label>`, pulsanti: [{ testo: 'Salva', cls: 'btn-pieno', azione: d => { c.alloggio = val(d, 'd-alloggio'); c.mieiLuoghi = val(d, 'd-luoghi') || c.alloggio; salvaDB(); rinfresca(); } }, { testo: 'Annulla', cls: 'btn-grigio' }] }); }
 function dialogVisitaPrecedente(c) {
   apriDialog({
     titolo: 'Visita precedente', corpo: `${campo('Data:', inp('d-vp-data', c.visitaPrecedente ? c.visitaPrecedente.slice(0, 10) : '', 'date'))}${campo('Ora:', inp('d-vp-ora', c.visitaPrecedente ? c.visitaPrecedente.slice(11, 16) : '09:00', 'time'))}<div class="sez">Precedente tentativo</div>${campo('Data:', inp('d-pt-data', c.precedenteTentativo ? c.precedenteTentativo.slice(0, 10) : '', 'date'))}${campo('Ora:', inp('d-pt-ora', c.precedenteTentativo ? c.precedenteTentativo.slice(11, 16) : '09:00', 'time'))}<div class="sez">Attivazione</div>${campo('Attivato il:', inp('d-att', c.attivazione ? c.attivazione.slice(0, 10) : '', 'date'))}<div class="testo-piccolo">Lascia vuota la data per azzerare.</div>`,
@@ -2523,7 +2525,7 @@ function creaAgenda(partenza) {
 function dialogPuntoPartenza(onScelta) {
   statoPP.onScelta = onScelta; const d = DB.settings.domicilio;
   const voce = (azione, id, titolo, sotto, icona) => `<div class="lc" data-azione="${azione}" ${id ? `data-id="${id}"` : ''} style="cursor:pointer"><span class="n" style="color:var(--blu)">${ico(icona, 'ic-lc')} ${esc(titolo)}${sotto ? `<br><span class="testo-piccolo">${esc(sotto)}</span>` : ''}</span></div>`;
-  const luoghiC = DB.clienti.filter(c => c.mieiLuoghi && !c.cestino).sort((a, b) => a.nome.localeCompare(b.nome));
+  const luoghiC = DB.clienti.filter(c => inMieiLuoghi(c)).sort((a, b) => a.nome.localeCompare(b.nome));
   const alloggi = (DB.alloggi || []).filter(a => a.lat != null);
   let corpo = `<div class="lista-campi">${voce('pp-domicilio', '', 'Domicilio', d.lat == null ? 'non impostato' : indirizzoBreve(d), 'casa')}${voce('pp-cliente', '', 'Un cliente…', 'cerca e scegli il cliente da cui partire', 'persona')}</div>`;
   if (luoghiC.length || alloggi.length) corpo += `<div class="sez">I miei luoghi</div><div class="lista-campi" style="max-height:40vh;overflow:auto">${luoghiC.map(c => voce('pp-luogo', 'c:' + c.id, nomeCliente(c), indirizzoBreve(c), 'posizione')).join('')}${alloggi.map(a => voce('pp-luogo', 'a:' + a.id, a.nome, a.citta || '', 'letto')).join('')}</div>`;
