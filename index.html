@@ -1445,7 +1445,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.10';
+const APP_VERSIONE = '1.4.11';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -1644,7 +1644,10 @@ function nomeVisualizzato(c) {
   return nomeCliente(c) + (extra.length ? ' (' + extra.join(', ') + ')' : '');
 }
 function nomeConSimbolo(c) { return (c.simbolo ? c.simbolo + ' ' : '') + nomeVisualizzato(c); }
-const SIMBOLI = ['', '☀️', '☁️', '⭐', '☘️', '😊', '💎', '🔑', '🏆', '⚡', '❤️', '🔔', '📌', '🏠', '🚩', '🎯'];
+// Simboli predefiniti: quelli presenti nei dati di Andrea (in ordine di frequenza) più i generici
+const SIMBOLI = ['', '☎️', '📲', '⚪', '🔔', '💛', '🩵', '📞', '🏧', '🌏', '⚫', '💣', '🌕', '🚗', '🎀', '🔵', '🧡', '🍝', '🛏', '🎯', '🚦', '🚥', '👁', '🌟', '🕇', '🌓', '🌼', '⚠️', '🌈', '⛔', '💥', '📍', '🌸', '💚', '🖕', '🖤', '👎', '🔥', '❓', '🗣', '💁', '🏢', '🚀', '💊', '⚁', '🌍', '🌀', '🌐', '✈️', '♰', '🚺', '🏭', '🗼', '☀️', '☁️', '⭐', '☘️', '😊', '💎', '🔑', '🏆', '⚡', '❤️', '📌', '🏠', '🚩'];
+// Elenco effettivo: predefiniti + tutti i simboli usati nei clienti presenti (quelli usati prima, per frequenza)
+function simboliDisponibili(extra) { const cnt = new Map(); (DB && DB.clienti || []).forEach(c => { const s = (c.simbolo || '').trim(); if (s) cnt.set(s, (cnt.get(s) || 0) + 1); }); const usati = [...cnt.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]); const resto = SIMBOLI.filter(s => s && !cnt.has(s)); const out = ['', ...usati, ...resto]; if (extra && !out.includes(extra)) out.splice(1, 0, extra); return out; }
 
 /* pin SVG per la mappa */
 function pinHtml(colore, etichetta = '', simbolo = '', extraCls = '') {
@@ -2087,7 +2090,7 @@ function dialogIndirizzo(c) {
   apriDialog({
     titolo: nuovo ? 'Nuovo cliente' : 'Nome / Indirizzo / Simbolo', aiuto: 'Inserisci l\'indirizzo e premi Geocodifica per posizionare il cliente sulla mappa (serve la connessione).',
     corpo: `${campo('Nome AZIENDA:', inp('d-nome', x.nome))}${campo('Nome PERSONA:', inp('d-nome-persona', x.nomePersona))}${campo('Cognome PERSONA:', inp('d-cognome-persona', x.cognomePersona))}${campo('Via:', inp('d-via', x.via))}${campo('CAP:', inp('d-cap', x.cap))}${campo('Città:', inp('d-citta', x.citta))}${campo('Provincia:', inp('d-prov', x.provincia))}${campo('Paese:', inp('d-paese', x.paese))}
-    ${campo('Simbolo:', `<div class="inline">${sel('d-simbolo', (SIMBOLI.includes(x.simbolo) ? SIMBOLI : [x.simbolo, ...SIMBOLI]).map(s => [s, s || '(nessuno)']), x.simbolo)} <input id="d-simbolo-libero" placeholder="o scrivi un emoji" style="width:120px"></div>`)}
+    ${campo('Simbolo:', `<div class="inline">${sel('d-simbolo', simboliDisponibili(x.simbolo).map(s => [s, s || '(nessuno)']), x.simbolo)} <input id="d-simbolo-libero" placeholder="o scrivi un emoji" style="width:120px"></div>`)}
     <div class="sez">Posizione</div><div class="inline">${campo('Latitudine:', inp('d-lat', x.lat ?? '', 'text', 'style="width:110px"'))}${campo('Longitudine:', inp('d-lng', x.lng ?? '', 'text', 'style="width:110px"'))}</div>
     <div class="centro"><button class="btn-contorno" id="d-geo">Geocodifica</button> <span id="d-geo-msg" class="testo-piccolo"></span></div>`,
     pulsanti: [{
@@ -2352,7 +2355,7 @@ function dialogModificaMultipla(ids) {
   apriDialog({
     titolo: `Modifica ${ids.length} clienti`, aiuto: 'Solo i campi spuntati vengono modificati su tutti i clienti selezionati.',
     corpo: `<div class="testo-piccolo" style="margin-bottom:8px">${ids.slice(0, 8).map(i => esc(nomeCliente(cliente(i)))).join(', ')}${ids.length > 8 ? ` e altri ${ids.length - 8}` : ''}</div>
-    ${campo('<input type="checkbox" id="mm-cat-on"> Categorie:', sel('mm-cat', ['', ...DB.settings.categorie], ''))}${campo('<input type="checkbox" id="mm-tipo-on"> Tipo:', sel('mm-tipo', ['', ...DB.settings.tipi], ''))}${campo('<input type="checkbox" id="mm-cad-on"> Cadenza:', inp('mm-cad', 30, 'number'))}${campo('<input type="checkbox" id="mm-prog-on"> Programmazione:', sel('mm-prog', ['Automatica', 'Manuale', 'Nessuna'], 'Automatica'))}${campo('<input type="checkbox" id="mm-dur-on"> Durata:', inp('mm-dur', 30, 'number'))}${campo('<input type="checkbox" id="mm-sim-on"> Simbolo:', sel('mm-sim', SIMBOLI.map(s => [s, s || '(nessuno)']), ''))}${campo('<input type="checkbox" id="mm-ins-on"> Inserisci in agenda', '')}`,
+    ${campo('<input type="checkbox" id="mm-cat-on"> Categorie:', sel('mm-cat', ['', ...DB.settings.categorie], ''))}${campo('<input type="checkbox" id="mm-tipo-on"> Tipo:', sel('mm-tipo', ['', ...DB.settings.tipi], ''))}${campo('<input type="checkbox" id="mm-cad-on"> Cadenza:', inp('mm-cad', 30, 'number'))}${campo('<input type="checkbox" id="mm-prog-on"> Programmazione:', sel('mm-prog', ['Automatica', 'Manuale', 'Nessuna'], 'Automatica'))}${campo('<input type="checkbox" id="mm-dur-on"> Durata:', inp('mm-dur', 30, 'number'))}${campo('<input type="checkbox" id="mm-sim-on"> Simbolo:', sel('mm-sim', simboliDisponibili().map(s => [s, s || '(nessuno)']), ''))}${campo('<input type="checkbox" id="mm-ins-on"> Inserisci in agenda', '')}`,
     pulsanti: [{
       testo: 'Salva', cls: 'btn-pieno', azione: d => {
         ids.forEach(i => { const c = cliente(i); if (!c) return; if (val(d, 'mm-cat-on')) c.categoria = val(d, 'mm-cat'); if (val(d, 'mm-tipo-on')) c.tipo = val(d, 'mm-tipo'); if (val(d, 'mm-cad-on')) c.cadenza = valNum(d, 'mm-cad'); if (val(d, 'mm-prog-on')) c.programmazione = val(d, 'mm-prog'); if (val(d, 'mm-dur-on')) c.durata = valNum(d, 'mm-dur'); if (val(d, 'mm-sim-on')) c.simbolo = val(d, 'mm-sim'); if (val(d, 'mm-ins-on') && !DB.inserimenti.includes(i)) DB.inserimenti.push(i); });
@@ -3238,7 +3241,7 @@ function costruisciClientiImport() {
     if (m.rispettoCadenza) c.rispettoCadenza = siNo(g(r, 'rispettoCadenza')); const restr = g(r, 'restrizione'); if (restr) c.restrizione = restr;
     const fd = dataDaTesto(g(r, 'ferieDa')); if (fd) c.ferieDa = fd.slice(0, 10); const fa = dataDaTesto(g(r, 'ferieA')); if (fa) c.ferieA = fa.slice(0, 10);
     const lat = numSemplice(g(r, 'lat')), lng = numSemplice(g(r, 'lng')); if (lat != null && lng != null && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) { c.lat = lat; c.lng = lng; }
-    if (m.mieiLuoghi) c.mieiLuoghi = siNo(g(r, 'mieiLuoghi')); if (m.alloggio) c.alloggio = siNo(g(r, 'alloggio')); c.promemoria = g(r, 'promemoria'); const sim = g(r, 'simbolo'); if (sim && SIMBOLI.includes(sim)) c.simbolo = sim;
+    if (m.mieiLuoghi) c.mieiLuoghi = siNo(g(r, 'mieiLuoghi')); if (m.alloggio) c.alloggio = siNo(g(r, 'alloggio')); c.promemoria = g(r, 'promemoria'); const sim = g(r, 'simbolo'); if (sim && sim.trim().length <= 4) c.simbolo = sim.trim();
     const ot = g(r, 'orarioTesto'); if (ot) { const mm = ot.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/); if (mm) { c.orario = {}; [1, 2, 3, 4, 5].forEach(gg => c.orario[gg] = [pad(mm[1]) + ':' + mm[2], pad(mm[3]) + ':' + mm[4]]); } }
     // esistente?
     if (statoImp.aggiorna) { const ex = DB.clienti.find(x => (c.numeroCliente && x.numeroCliente === c.numeroCliente) || (x.nome.toLowerCase() === c.nome.toLowerCase() && (x.citta || '').toLowerCase() === (c.citta || '').toLowerCase())); if (ex) { c._esistente = ex.id; if (c.lat == null && ex.lat != null && ex.via === c.via && ex.citta === c.citta) { c.lat = ex.lat; c.lng = ex.lng; } } }
