@@ -1166,6 +1166,23 @@ body.scuro .rp-piede{background:#1c2a38}
 @keyframes sync-gira{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
 @media (max-width:760px){#sync-stato{margin-right:4px}}
 
+/* menu del giorno (calendario) */
+.dlg.ctx{background:#fff}
+.dlg.ctx .db{padding:0}
+.dlg.ctx .df{display:none}
+.dlg.ctx .dh .q{visibility:hidden}
+.dlg.ctx .dh .t{text-align:left;text-transform:none;padding-left:4px}
+.ctx-menu .lc.ctx-voce{padding:0 10px;height:41px;align-items:center;border-bottom:1px solid #e5e5e5;cursor:pointer;font-size:14.67px}
+.ctx-menu .lc.ctx-voce:last-child{border-bottom:0}
+.ctx-menu .lc.ctx-voce .n{color:var(--blu)}
+.ctx-menu .lc.ctx-voce svg{color:var(--blu);width:16px;height:16px}
+.ctx-menu .lc.ctx-voce:hover{background:#f7f7f7}
+.cal-mese .mc{cursor:pointer}
+.cal-mese .mc .dh{cursor:pointer}
+body.scuro .dlg.ctx{background:#1c2a38}
+body.scuro .ctx-menu .lc.ctx-voce{border-color:#2a3a4a}
+body.scuro .ctx-menu .lc.ctx-voce:hover{background:#243546}
+
 /* ---------- TEMA SCURO ---------- */
 body.scuro{--sfondo:#15202b;--bordo:#2f3e4e;--testo:#e6edf3;--testo2:#9fb0c0;--blu:#2d7bc4;--blu2:#5aa9e6;--blu-scuro:#1f5f9a;--giallo:#e0a800;--giallo2:#8a6a00;--giallo-testo:#f0c040;color:var(--testo)}
 body.scuro #header,body.scuro .toolbar,body.scuro .riga-ricerca,body.scuro .intestazione-lista,body.scuro .gruppo,body.scuro .riga,body.scuro .ag-item,body.scuro .ag-totale,body.scuro .nota-vuota,body.scuro .card,body.scuro .vuoto,body.scuro .giorni,body.scuro .sezione-tab,body.scuro .abc,body.scuro .cal-top,body.scuro .cal-griglia .intest,body.scuro .cal-ore,body.scuro .cal-mese,body.scuro .cal-mese .mh,body.scuro .opz .box,body.scuro .dlg,body.scuro #menu-drop,body.scuro .map-bottom,body.scuro .legenda,body.scuro .colora-sel,body.scuro .titolo-pagina,body.scuro .stat,body.scuro .rap-riga,body.scuro .compito-check,body.scuro table.tab th{background:#1c2a38;color:var(--testo);border-color:var(--bordo)}
@@ -1286,7 +1303,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.2';
+const APP_VERSIONE = '1.4.3';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -1493,10 +1510,10 @@ function toast(msg, ms = 2600) { const t = $('#toast'); t.textContent = msg; t.c
 
 /* ---------------- Dialog ---------------- */
 const dialogStack = [];
-function apriDialog({ titolo, corpo, pulsanti, larga, xl, onApri, aiuto }) {
+function apriDialog({ titolo, corpo, pulsanti, larga, xl, onApri, aiuto, classe }) {
   const ov = $('#overlay');
   const d = document.createElement('div');
-  d.className = 'dlg' + (larga ? ' larga' : '') + (xl ? ' xl' : '');
+  d.className = 'dlg' + (larga ? ' larga' : '') + (xl ? ' xl' : '') + (classe ? ' ' + classe : '');
   d.innerHTML = `<div class="dh"><span class="q" title="${esc(aiuto || 'Aiuto')}">?</span><span class="t">${esc(titolo)}</span><span class="x">&times;</span></div><div class="db">${corpo}</div><div class="df"></div>`;
   const df = $('.df', d);
   (pulsanti || [{ testo: 'Chiudi', cls: 'btn-grigio' }]).forEach(p => {
@@ -2546,7 +2563,7 @@ RENDER.calendario = () => {
   oraMinG = Math.floor(Math.max(0, oraMinG - 30) / 60) * 60; oraMaxG = Math.min(24 * 60, Math.ceil((oraMaxG + 30) / 60) * 60);
   const slots = (oraMaxG - oraMinG) / scala; const altezza = slots * ph; const y = min => (min - oraMinG) / scala * ph;
   html += `<div class="scroll" id="cal-scroll"><div class="cal-griglia" style="--ncol:${giorni.length};--ph:${ph}px"><div class="intest"></div>`;
-  giorni.forEach(g => { const dd = daIso(g); html += `<div class="intest ${g === oggiIso() ? 'oggi' : ''}" data-azione="cal-apri-giorno" data-g="${g}" style="cursor:pointer"><span>${GIORNI_BREVI[dd.getDay()]} ${pad(dd.getDate())}</span>${ico('mappa')}</div>`; });
+  giorni.forEach(g => { const dd = daIso(g); html += `<div class="intest ${g === oggiIso() ? 'oggi' : ''}" data-azione="cal-menu-giorno" data-g="${g}" style="cursor:pointer"><span>${GIORNI_BREVI[dd.getDay()]} ${pad(dd.getDate())}</span>${ico('mappa')}</div>`; });
   html += `<div class="cal-ore" style="height:${altezza}px">`;
   for (let mnt = oraMinG; mnt < oraMaxG; mnt += 60) html += `<div style="top:${y(mnt)}px">${fmtOra(mnt)}</div>`;
   html += '</div>';
@@ -2594,7 +2611,7 @@ function renderMese(d) {
         const testo = e.tipo === 'domicilio' || e.tipo === 'pernott' ? esc(e.titolo) : (e.tipo === 'proposta' && cfg.etichetta === 'luogo' ? esc(e.sotto || e.titolo) : `${e.simbolo ? e.simbolo + ' ' : ''}${esc(e.titolo)}${e.sotto && e.tipo !== 'fisso' ? '<br>' + esc(e.sotto) : ''}`);
         return `<div class="e ${e.tipo}" ${az} title="${fmtOra(e.inizio)} - ${fmtOra(e.fine)} ${esc(e.titolo)}"><b>${fmtOra(e.inizio, ':')}</b> ${testo}</div>`;
       };
-      html += `<div class="mc ${dd.getMonth() !== d.getMonth() ? 'altro' : ''} ${g === oggiIso() ? 'oggi' : ''}" data-g="${g}"><div class="dh ${inAgenda ? 'agenda' : ''}" data-azione="cal-apri-giorno" data-g="${g}"><span class="n">${dd.getDate()}</span>${inAgenda ? `<span class="ic" title="Apri l'agenda del giorno">${ico('mappa')}</span>` : ''}</div>${ev.map(chip).join('')}</div>`;
+      html += `<div class="mc ${dd.getMonth() !== d.getMonth() ? 'altro' : ''} ${g === oggiIso() ? 'oggi' : ''}" data-azione="cal-menu-giorno" data-g="${g}"><div class="dh ${inAgenda ? 'agenda' : ''}" data-g="${g}"><span class="n">${dd.getDate()}</span>${inAgenda ? `<span class="ic" title="Apri l'agenda del giorno">${ico('mappa')}</span>` : ''}</div>${ev.map(chip).join('')}</div>`;
     }
   }
   return html + '</div></div>';
@@ -2772,6 +2789,55 @@ RENDER.relazione = () => {
   <div class="card"><div class="ch">Clienti più visitati</div><div class="cb"><table class="tab"><thead><tr><th>Cliente</th><th>Visite</th><th>Ultima</th></tr></thead><tbody>${top.map(x => `<tr><td><a data-azione="cl-apri" data-id="${x.c.id}" style="cursor:pointer">${esc(x.c.nome)}</a></td><td>${x.n}</td><td>${x.c.visitaPrecedente ? fmtData(x.c.visitaPrecedente, false) : '-'}</td></tr>`).join('') || '<tr><td colspan="3">-</td></tr>'}</tbody></table></div></div></div></div>`;
   $$('table', v).forEach(rendiOrdinabile);
 };
+
+/* ---------- menu del giorno (clic su un giorno del calendario, come l'originale) ---------- */
+function menuGiorno(g) {
+  const d = daIso(g); const titolo = `${GIORNI_BREVI[d.getDay()]}, ${fmtData(g, false)}`;
+  const inAgenda = !!DB.agenda.giorni[g];
+  const giorniAg = Object.keys(DB.agenda.giorni).sort(); const ultimo = giorniAg[giorniAg.length - 1];
+  let primoDopo = null; if (ultimo) { let x = addGiorni(ultimo, 1); for (let i = 0; i < 14; i++) { if (DB.settings.orario[daIso(x).getDay()]) { primoDopo = x; break; } x = addGiorni(x, 1); } }
+  const voce = (az, testo, sub) => `<div class="lc ctx-voce" data-azione="${az}" data-g="${g}"><span class="n">${testo}</span>${sub ? ico('freccia_dx', 'ic-lc') : ''}</div>`;
+  let corpo = '<div class="lista-campi ctx-menu">';
+  if (primoDopo === g) corpo += voce('cg-pianifica', 'Pianifica più giorni', true);
+  if (inAgenda) corpo += voce('cg-agenda', 'Agenda') + voce('cg-mappa', 'Mappa');
+  corpo += voce('cg-compito', 'Nuovo compito', true) + voce('cg-app-cliente', 'Nuovo appuntamento dal cliente') + voce('cg-app', 'Nuovo appuntamento', true) + voce('cg-modifica', 'Modifica giorno', true) + '</div>';
+  apriDialog({ titolo, corpo, pulsanti: [], classe: 'piccola ctx' });
+}
+function dialogSelezioneClienti(onScelta) {
+  const ren = q => { q = (q || '').trim().toLowerCase(); if (!q) return ''; const l = DB.clienti.filter(c => (c.nome + ' ' + (c.citta || '') + ' ' + (c.numeroCliente || '')).toLowerCase().includes(q)).slice(0, 30); return l.length ? `<div class="lista-campi">${l.map(c => `<div class="lc" data-azione="sc-scegli" data-id="${c.id}"><span class="n" style="color:var(--blu)">${esc(nomeConSimbolo(c))}<br><span class="testo-piccolo">${esc(indirizzoBreve(c))}</span></span></div>`).join('')}</div>` : '<div class="centro testo-piccolo">Nessun cliente trovato</div>'; };
+  AZIONI['sc-scegli'] = el => { const c = cliente(el.dataset.id); if (c) onScelta(c); };
+  apriDialog({ titolo: 'Selezione clienti', corpo: `<div class="riga-ricerca" style="padding:0;justify-content:center"><input type="text" id="sc-q" placeholder="Cerca..." autocomplete="off"><button class="btn-cerca" id="sc-btn">${ico('cerca')}</button></div><div id="sc-ris" style="margin-top:8px;max-height:50vh;overflow:auto"></div>`, pulsanti: [{ testo: 'Annulla', cls: 'btn-grigio' }],
+    onApri: dlg => { const q = $('#sc-q', dlg), r = $('#sc-ris', dlg); const agg = () => { r.innerHTML = ren(q.value); }; q.oninput = agg; q.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); agg(); } }; $('#sc-btn', dlg).onclick = agg; setTimeout(() => q.focus(), 50); } });
+}
+function spostaGiorno(da, a, scambia) {
+  if (!a || a === da) return false;
+  const app = DB.appuntamenti.filter(x => x.data === da), appA = DB.appuntamenti.filter(x => x.data === a);
+  app.forEach(x => { x.data = a; }); if (scambia) appA.forEach(x => { x.data = da; });
+  const agDa = DB.agenda.giorni[da], agA = DB.agenda.giorni[a];
+  if (scambia) { if (agDa) DB.agenda.giorni[a] = agDa; else delete DB.agenda.giorni[a]; if (agA) DB.agenda.giorni[da] = agA; else delete DB.agenda.giorni[da]; }
+  else if (agDa) { DB.agenda.giorni[a] = agDa; delete DB.agenda.giorni[da]; }
+  [da, a].forEach(k => { if (DB.agenda.giorni[k]) DB.agenda.giorni[k].giorno = k; });
+  salvaDB(); rinfresca(); return true;
+}
+function dialogSpostaGiorno(g, scambia) {
+  const d = daIso(g); const et = `${GIORNI_BREVI[d.getDay()]}, ${fmtData(g, false)}`;
+  const opz = []; let x = addGiorni(oggiIso(), 0); for (let i = 0; i < 60; i++) { if (x !== g) { const dx = daIso(x); opz.push([x, `${GIORNI_BREVI[dx.getDay()]}, ${fmtData(x, false)}`]); } x = addGiorni(x, 1); }
+  apriDialog({ titolo: scambia ? 'Scambia giorno' : 'Sposta giorno', classe: 'piccola', corpo: `<div style="margin-bottom:8px">${scambia ? 'Scambia' : 'Sposta'} tutte le visite e gli appuntamenti di <b>${et}</b>${scambia ? ' con quelli del giorno scelto' : ''}.</div><div class="inline">${scambia ? 'Con' : 'A'}: ${sel('sg-a', opz, opz[0][0])} <input type="date" id="sg-data" style="width:36px;padding:2px" title="Altra data"></div>`,
+    pulsanti: [{ testo: scambia ? 'Scambia' : 'Sposta', cls: 'btn-pieno', azione: dlg => { const a = val(dlg, 'sg-data') || val(dlg, 'sg-a'); if (!spostaGiorno(g, a, scambia)) return false; toast(scambia ? 'Giorni scambiati' : 'Giorno spostato'); } }, { testo: 'Annulla', cls: 'btn-grigio' }],
+    onApri: dlg => { $('#sg-data', dlg).onchange = () => { const v = $('#sg-data', dlg).value; const s = $('#sg-a', dlg); if (v) { if (![...s.options].some(o => o.value === v)) { const dv = daIso(v); s.add(new Option(`${GIORNI_BREVI[dv.getDay()]}, ${fmtData(v, false)}`, v)); } s.value = v; } }; } });
+}
+Object.assign(AZIONI, {
+  'cal-menu-giorno': el => menuGiorno(el.dataset.g),
+  'cg-pianifica': el => { DB.settings.ottimizzazione.giorniAgenda = (DB.settings.ottimizzazione.giorniAgenda || 5) + 5; salvaDB(); toast('Pianificazione di altri 5 giorni...', 1200); setTimeout(() => { if (pianificaAgenda({ aggiorna: true })) { statoAgenda.giorno = el.dataset.g; statoAgenda.piuGiorni = true; mostraVista('agenda'); } }, 50); },
+  'cg-agenda': el => { statoAgenda.giorno = el.dataset.g; statoAgenda.modo = 'lista'; mostraVista('agenda'); },
+  'cg-mappa': el => { statoAgenda.giorno = el.dataset.g; statoAgenda.modo = 'mappa'; mostraVista('agenda'); },
+  'cg-compito': el => dialogCompito({ data: el.dataset.g }),
+  'cg-app': el => dialogAppuntamento({ data: el.dataset.g }),
+  'cg-app-cliente': el => { const g = el.dataset.g; dialogSelezioneClienti(c => { chiudiTuttiDialog(); dialogAppuntamento({ clienteId: c.id, data: g, oggetto: c.nome }); }); },
+  'cg-modifica': el => { const g = el.dataset.g; apriDialog({ titolo: 'Modifica giorno', classe: 'piccola ctx', corpo: `<div class="lista-campi ctx-menu"><div class="lc ctx-voce" data-azione="cg-sposta" data-g="${g}"><span class="n">Sposta giorno</span></div><div class="lc ctx-voce" data-azione="cg-scambia" data-g="${g}"><span class="n">Scambia giorno</span></div></div>`, pulsanti: [] }); },
+  'cg-sposta': el => dialogSpostaGiorno(el.dataset.g, false),
+  'cg-scambia': el => dialogSpostaGiorno(el.dataset.g, true)
+});
 
 /* ====================================================================
    OPZIONI
