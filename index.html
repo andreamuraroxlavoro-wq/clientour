@@ -1267,6 +1267,11 @@ body.scuro .rap-scheda{background:#161a1d}
 body.scuro .rap-scheda .pill{background:#222930}
 body.scuro .rap-scheda .pill.tipo{background:#1f3447;color:var(--blu2)}
 @media (max-width:760px){.rap-schede{padding:6px 6px 2px}.rap-scheda{padding:12px 12px;border-radius:8px}.rap-scheda .rs-f .vv{font-size:1.05rem;line-height:1.65}.rap-scheda .rs-o{font-size:1.12rem}.rap-scheda .rs-cli{margin-left:0;flex-basis:100%}}
+
+/* sezioni native nel dialogo rapporto (v1.5.0) */
+.dlg .campo.rs-edit{border-left:3px solid var(--rc,#4a565f);padding-left:10px;margin-bottom:10px}
+.dlg .campo.rs-edit label{font-weight:700;letter-spacing:.09em;font-size:0.9rem;color:var(--rc,#4a565f)}
+.dlg .campo.rs-edit textarea{width:100%;min-height:2.6em;line-height:1.5}
 /* ---------- Switch a due posizioni (v1.4.9) ---------- */
 .switch2{display:inline-flex;border:1px solid var(--blu);border-radius:4px;overflow:hidden;user-select:none}
 .switch2 span{padding:7px 16px;cursor:pointer;color:var(--blu);background:#fff;font-weight:600}
@@ -1474,7 +1479,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.12';
+const APP_VERSIONE = '1.5.0';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -1549,7 +1554,7 @@ let DB = null;
 function apriIDB(nome = 'clientour') { return new Promise((res, rej) => { const r = indexedDB.open(nome, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
 function idbGet(k) { return apriIDB().then(db => new Promise((res, rej) => { const t = db.transaction('kv').objectStore('kv').get(k); t.onsuccess = () => res(t.result); t.onerror = () => rej(t.error); })); }
 function idbSet(k, v) { return apriIDB().then(db => new Promise((res, rej) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(); t.onerror = () => rej(t.error); })); }
-function normalizzaDB(j) { const d = Object.assign(dbDefault(), j); d.settings = Object.assign(dbDefault().settings, d.settings || {}); d.settings.ottimizzazione = Object.assign(dbDefault().settings.ottimizzazione, d.settings.ottimizzazione || {}); d.settings.campi = Object.assign({ clienti: [], rapporti: [], appuntamenti: [], compiti: [] }, d.settings.campi || {}); d.settings.gruppi = Object.assign({ clienti: [], rapporti: [], appuntamenti: [], compiti: [] }, d.settings.gruppi || {}); normalizzaGruppi(d.settings); return d; }
+function normalizzaDB(j) { const d = Object.assign(dbDefault(), j); d.settings = Object.assign(dbDefault().settings, d.settings || {}); d.settings.ottimizzazione = Object.assign(dbDefault().settings.ottimizzazione, d.settings.ottimizzazione || {}); d.settings.campi = Object.assign({ clienti: [], rapporti: [], appuntamenti: [], compiti: [] }, d.settings.campi || {}); d.settings.gruppi = Object.assign({ clienti: [], rapporti: [], appuntamenti: [], compiti: [] }, d.settings.gruppi || {}); normalizzaGruppi(d.settings); (d.settings.campi.rapporti || []).forEach(f => { if (/^Testo/.test(f.tipo) && sezioneDiCampo(f.nome)) f.migrato = true; }); return d; }
 /* ogni campo appartiene a un gruppo; i campi senza gruppo finiscono nel gruppo "Informazioni" */
 function normalizzaGruppi(s) {
   for (const k of ['clienti', 'rapporti', 'appuntamenti', 'compiti']) {
@@ -1557,9 +1562,24 @@ function normalizzaGruppi(s) {
     campi.forEach(f => { if (!f.gruppo || !gruppi.some(g => g.id === f.gruppo)) { let g = gruppi.find(x => x.nome === 'Informazioni'); if (!g) { g = { id: 'g_info_' + k, nome: 'Informazioni', etichette: 0 }; gruppi.push(g); } f.gruppo = g.id; } if (f.opzioni && f.opzioni.length && typeof f.opzioni[0] === 'object') f.opzioni = f.opzioni.map(o => o.v ?? o.Value ?? String(o)); });
   }
 }
+
+// ----- struttura nativa del rapporto: OBBIETTIVO / INFORMAZIONI / AZIONE / NOTE -----
+const SEZIONI_RAPPORTO = [['obiettivo', 'OBBIETTIVO', 'ob'], ['informazioni', 'INFORMAZIONI', 'inf'], ['azione', 'AZIONE', 'az'], ['note', 'NOTE', 'nt']];
+function sezioneDiCampo(nome) { const n = (nome || '').trim().toLowerCase(); if (/ob+iettiv/.test(n)) return 'obiettivo'; if (/^info\s*\d*$|^informazioni$|^contenuto$/.test(n)) return 'informazioni'; if (/^azion[ei]$/.test(n)) return 'azione'; if (/^note? report$|^nota$|^note$|^annotazioni?$/.test(n)) return 'note'; return null; }
+function tintaCampoRapporto(nome) { const k = sezioneDiCampo(nome); return k ? SEZIONI_RAPPORTO.find(s => s[0] === k)[2] : 'inf'; }
+// valori delle sezioni: i campi nativi, oppure (per i rapporti importati) i campi personalizzati equivalenti
+function sezioniRapporto(r) {
+  const out = { obiettivo: r.obiettivo || '', informazioni: r.informazioni || '', azione: r.azione || '', note: r.note || '' };
+  if (out.obiettivo || out.informazioni || out.azione || out.note) return out;
+  const acc = { obiettivo: [], informazioni: [], azione: [], note: [] };
+  (DB.settings.campi.rapporti || []).forEach(f => { if (!/^Testo/.test(f.tipo)) return; const k = sezioneDiCampo(f.nome); const v = r.custom && r.custom[f.id]; if (k && v != null && String(v).trim()) acc[k].push(String(v).trim()); });
+  for (const k in acc) out[k] = acc[k].join('\n\n');
+  return out;
+}
+function campoMigrato(f) { return f.migrato === true; }
 // Campi personalizzati: 'personalizzato' (predefinito) mostra anche i campi aggiunti dall'utente; 'default' li nasconde nella consultazione (i dati restano salvati, esportati e sincronizzati)
 function campiPersonalizzatiAttivi() { return (DB.settings.vistaCampi || 'personalizzato') !== 'default'; }
-function campiDelGruppo(tipo, gid) { if (!campiPersonalizzatiAttivi()) return []; return DB.settings.campi[tipo].filter(f => f.gruppo === gid); }
+function campiDelGruppo(tipo, gid) { if (!campiPersonalizzatiAttivi()) return []; return DB.settings.campi[tipo].filter(f => f.gruppo === gid && !campoMigrato(f)); }
 async function caricaDB() {
   DB = dbDefault();
   try { const v = await idbGet('db'); if (v) { DB = normalizzaDB(v); return; } } catch (e) { console.warn('IndexedDB non disponibile', e); }
@@ -2181,11 +2201,12 @@ function dialogRapporto(c, r, oggettoIniziale) {
     titolo: 'Rapporto visita', larga: true, aiuto: 'Il rapporto registra la visita: aggiorna la visita precedente del cliente e azzera l\'urgenza. "Non disponibile" registra solo il tentativo.',
     corpo: `<div style="margin-bottom:6px">per <b>${esc(nomeVisualizzato(c))}</b></div><div class="sez">Data / orario</div>${campo('Data:', inp('d-r-data', x.data, 'date'))}${campo('Ora di inizio:', inp('d-r-ini', x.inizio, 'time'))}${campo('Ora di fine:', inp('d-r-fine', x.fine, 'time'))}
     <div class="sez">Oggetto</div><div class="campo verticale">${sel('d-r-ogg', DB.settings.oggettiRapporto.includes(x.oggetto) ? DB.settings.oggettiRapporto : [x.oggetto, ...DB.settings.oggettiRapporto], x.oggetto)}<label>Nota:</label><textarea id="d-r-nota">${esc(x.nota)}</textarea></div>
+    <div class="sez">Contenuto del rapporto</div>${(() => { const sz = sezioniRapporto(x); return SEZIONI_RAPPORTO.map(([k, et, t]) => `<div class="campo verticale rs-f rs-f-${t} rs-edit"><label>${et}:</label><textarea id="d-r-sez-${k}" rows="${k === 'informazioni' ? 7 : 2}">${esc(sz[k])}</textarea></div>`).join(''); })()}
     ${gruppi}
     <div class="sez">Prossima visita</div><div class="campo verticale"><label>Promemoria:</label><div class="inline"><input id="d-r-prom" value="${esc(x.promemoria || '')}" style="flex:1"><button class="btn-mini" data-azione="rp-x">x</button></div></div>`,
     pulsanti: [{
       testo: 'Salva', cls: 'btn-pieno', azione: d => {
-        Object.assign(x, { data: val(d, 'd-r-data'), inizio: val(d, 'd-r-ini'), fine: val(d, 'd-r-fine'), oggetto: val(d, 'd-r-ogg'), nota: val(d, 'd-r-nota'), promemoria: val(d, 'd-r-prom') });
+        Object.assign(x, { data: val(d, 'd-r-data'), inizio: val(d, 'd-r-ini'), fine: val(d, 'd-r-fine'), oggetto: val(d, 'd-r-ogg'), nota: val(d, 'd-r-nota'), promemoria: val(d, 'd-r-prom'), obiettivo: val(d, 'd-r-sez-obiettivo'), informazioni: val(d, 'd-r-sez-informazioni'), azione: val(d, 'd-r-sez-azione'), note: val(d, 'd-r-sez-note') });
         if (!x.data) { toast('Data obbligatoria'); return false; }
         if (oraMin(x.fine) <= oraMin(x.inizio)) x.fine = minOra(oraMin(x.inizio) + 5);
         DB.settings.campi.rapporti.forEach(f => { const v = leggiCustom(d, 'd-rc-' + f.id, f); if (v === undefined) return; if (v == null || v === '' || (Array.isArray(v) && !v.length)) delete x.custom[f.id]; else x.custom[f.id] = v; });
@@ -2963,11 +2984,11 @@ function dialogCompito(dati) {
 ==================================================================== */
 
 /* ---------- vista "Schede" dei rapporti (stile Gestione Fatturato) ---------- */
-function tintaCampoRapporto(nome) { const n = (nome || '').toLowerCase(); if (/ob+iettivo/.test(n)) return 'ob'; if (/azione/.test(n)) return 'az'; if (/note? report|^nota|annotazion/.test(n)) return 'nt'; return 'inf'; }
 function htmlRapportoScheda(r, c, mostraCliente) {
   const pers = campiPersonalizzatiAttivi();
   const gruppi = pers ? DB.settings.gruppi.rapporti.filter(g => !/^GESTIONE CLIENTI/i.test(g.nome)) : [];
   const pill = [], sez = []; let info = [];
+  const sz = sezioniRapporto(r); SEZIONI_RAPPORTO.forEach(([k, et, t]) => { if (sz[k]) sez.push({ nome: et, tinta: t, html: esc(sz[k]) }); });
   const pieno = v => v != null && v !== '' && !(Array.isArray(v) && !v.length);
   gruppi.forEach(g => campiDelGruppo('rapporti', g.id).filter(f => f.modalita !== 'Nascondi' && r.custom && pieno(r.custom[f.id])).forEach(f => {
     const v = r.custom[f.id];
@@ -2977,6 +2998,7 @@ function htmlRapportoScheda(r, c, mostraCliente) {
     else pill.push(`<span class="pill">${/^-$/.test(f.nome.trim()) ? '' : `<span class="pk">${esc(f.nome)}</span>`}${htmlCustom(f, v)}</span>`);
   }));
   if (info.length) { const i = sez.findIndex(s => s.tinta === 'ob'); sez.splice(i >= 0 ? i + 1 : 0, 0, { nome: 'Informazioni', tinta: 'inf', html: info.map(esc).join('\n\n') }); }
+  const ordine = { ob: 0, inf: 1, az: 2, nt: 3 }; sez.sort((a, b) => (ordine[a.tinta] ?? 9) - (ordine[b.tinta] ?? 9));
   const sel = statoRapporti.selezione ? `<span class="rp-sel"><input type="checkbox" data-azione="rp-sel" data-id="${r.id}" ${statoRapporti.selezionati.has(r.id) ? 'checked' : ''}></span>` : '';
   return `<div class="rap-scheda" data-azione="rp-apri" data-id="${r.id}">${sel}<div class="rs-h"><span class="rs-d">${fmtData(r.data)}</span>${r.inizio ? `<span class="rs-ora">${esc(fmtOra(oraMin(r.inizio)))}${r.fine ? ' – ' + esc(fmtOra(oraMin(r.fine))) : ''}</span>` : ''}<span class="pill tipo">${esc(r.oggetto || '—')}</span>${pill.join('')}${mostraCliente && c ? `<span class="rs-cli">${esc(nomeConSimbolo(c))}</span>` : ''}</div>${r.nota ? `<div class="rs-o">${esc(r.nota)}</div>` : ''}${sez.length ? `<div class="rs-c">${sez.map(s => `<div class="rs-f rs-f-${s.tinta}"><em>${esc(s.nome)}</em><span class="vv">${s.html}</span></div>`).join('')}</div>` : ''}${r.promemoria ? `<div class="rs-f rs-f-nt" style="margin-top:8px"><em>Promemoria</em><span class="vv">${esc(r.promemoria)}</span></div>` : ''}</div>`;
 }
@@ -2998,7 +3020,8 @@ RENDER.rapporti = () => {
     const c = cliente(r.clienteId);
     if (schede) { html += htmlRapportoScheda(r, c, !statoRapporti.clienteId); return; }
     if (r.data !== gruppo) { gruppo = r.data; html += `<div class="gruppo">${fmtData(r.data)}</div>`; }
-    const dx = gruppiR.filter(g => !/^GESTIONE CLIENTI/i.test(g.nome)).map(g => { const campi = campiDelGruppo('rapporti', g.id).filter(f => f.modalita !== 'Nascondi' && r.custom && r.custom[f.id] != null && r.custom[f.id] !== '' && !(Array.isArray(r.custom[f.id]) && !r.custom[f.id].length)); if (!campi.length) return ''; return `<span class="badge">${esc(g.nome)}</span><div class="campi">${campi.map(f => `<span class="et">${esc(f.nome)}: </span>${htmlCustom(f, r.custom[f.id])}`).join('<br>')}</div>`; }).join('');
+    const szC = sezioniRapporto(r); const dxNat = SEZIONI_RAPPORTO.filter(([k]) => szC[k]).map(([k, et]) => `<span class="et">${et}: </span>${esc(szC[k])}`).join('<br>');
+    const dx = (dxNat ? `<span class="badge">Rapporto</span><div class="campi">${dxNat}</div>` : '') + gruppiR.filter(g => !/^GESTIONE CLIENTI/i.test(g.nome)).map(g => { const campi = campiDelGruppo('rapporti', g.id).filter(f => f.modalita !== 'Nascondi' && r.custom && r.custom[f.id] != null && r.custom[f.id] !== '' && !(Array.isArray(r.custom[f.id]) && !r.custom[f.id].length)); if (!campi.length) return ''; return `<span class="badge">${esc(g.nome)}</span><div class="campi">${campi.map(f => `<span class="et">${esc(f.nome)}: </span>${htmlCustom(f, r.custom[f.id])}`).join('<br>')}</div>`; }).join('');
     const sel = statoRapporti.selezione ? `<span class="rp-sel"><input type="checkbox" data-azione="rp-sel" data-id="${r.id}" ${statoRapporti.selezionati.has(r.id) ? 'checked' : ''}></span>` : '';
     html += `<div class="rap-riga" data-azione="rp-apri" data-id="${r.id}">${sel}<div class="sx"><strong>${esc(r.oggetto)}${c ? ` (${esc(nomeConSimbolo(c))})` : ''}</strong>${r.nota ? `<div class="nota">${esc(r.nota)}</div>` : ''}</div><div class="dx">${dx}</div></div>`;
   });
@@ -3026,7 +3049,7 @@ Object.assign(AZIONI, {
   'rp-cerca': () => chiedi('Cerca nei rapporti', 'Testo (cliente, oggetto, nota)', '', q => { q = q.toLowerCase(); const l = DB.rapporti.filter(r => [r.oggetto, r.nota, cliente(r.clienteId)?.nome].some(x => x && x.toLowerCase().includes(q))).sort((a, b) => b.data.localeCompare(a.data)).slice(0, 100); apriDialog({ titolo: `Risultati (${l.length})`, larga: true, corpo: l.map(r => `<div class="riga" data-azione="rp-apri" data-id="${r.id}"><div class="col"><div class="nome">${esc(r.oggetto)} (${esc(cliente(r.clienteId)?.nome)})</div><div class="sub">${fmtData(r.data)} · ${esc(r.nota)}</div></div></div>`).join('') || '<div class="centro">Nessun risultato</div>' }); }),
   'rp-calendario': () => { DB.settings.calendario.visualizzazione = 'rapporti'; salvaDB(); mostraVista('calendario'); },
   'rp-relazione': () => mostraVista('relazione'),
-  'rp-esporta': () => { const campi = DB.settings.campi.rapporti; scaricaFile('rapporti.csv', '﻿' + [csvRiga(['Data', 'Inizio', 'Fine', 'Cliente', 'Numero cliente', 'Oggetto', 'Nota', 'Promemoria', ...campi.map(f => f.nome)])].concat(DB.rapporti.slice().sort((a, b) => (a.data + a.inizio).localeCompare(b.data + b.inizio)).map(r => { const c = cliente(r.clienteId) || {}; return csvRiga([fmtData(r.data, false), r.inizio, r.fine, nomeCliente(c), c.numeroCliente, r.oggetto, r.nota, r.promemoria, ...campi.map(f => formattaCustom(f, r.custom && r.custom[f.id]))]); })).join('\n'), 'text/csv'); toast('Rapporti esportati (CSV)'); },
+  'rp-esporta': () => { const campi = DB.settings.campi.rapporti; scaricaFile('rapporti.csv', '﻿' + [csvRiga(['Data', 'Inizio', 'Fine', 'Cliente', 'Numero cliente', 'Oggetto', 'Nota', 'Obbiettivo', 'Informazioni', 'Azione', 'Note', 'Promemoria', ...campi.map(f => f.nome)])].concat(DB.rapporti.slice().sort((a, b) => (a.data + a.inizio).localeCompare(b.data + b.inizio)).map(r => { const c = cliente(r.clienteId) || {}; const szE = sezioniRapporto(r); return csvRiga([fmtData(r.data, false), r.inizio, r.fine, nomeCliente(c), c.numeroCliente, r.oggetto, r.nota, szE.obiettivo, szE.informazioni, szE.azione, szE.note, r.promemoria, ...campi.map(f => formattaCustom(f, r.custom && r.custom[f.id]))]); })).join('\n'), 'text/csv'); toast('Rapporti esportati (CSV)'); },
   'rp-importa': () => importaCsvSemplice('rapporti')
 });
 
