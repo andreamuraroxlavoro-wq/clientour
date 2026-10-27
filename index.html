@@ -1438,7 +1438,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.7';
+const APP_VERSIONE = '1.4.8';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -2448,7 +2448,24 @@ function candidatiPianificazione(giorniOrizzonte) {
 }
 
 /* ---------- pianificazione completa ---------- */
-function pianificaAgenda({ aggiorna = false } = {}) {
+
+// ----- scelta del punto di partenza prima di creare/aggiornare l'agenda -----
+const statoPP = { onScelta: null };
+function creaAgenda(partenza) {
+  const esiste = Object.keys(DB.agenda.giorni).length > 0; toast(esiste ? 'Aggiornamento agenda...' : 'Creazione agenda...', 1200);
+  setTimeout(() => { if (pianificaAgenda({ aggiorna: esiste, partenza })) { RENDER.agenda(); const tot = Object.values(DB.agenda.giorni).reduce((a, g) => a + g.visite, 0); if (partenza && DB.agenda.partenzaIgnorata) avviso('Punto di partenza non utilizzabile', `Partendo da <b>${esc(partenza.nome)}</b> non si arriva in tempo agli appuntamenti fissati per il primo giorno: l'agenda parte dal domicilio.`); else toast(`Agenda ${esiste ? 'aggiornata' : 'creata'}: ${tot} visite in ${Object.keys(DB.agenda.giorni).length} giorni${partenza ? ' · partenza da ' + partenza.nome : ''}`); } }, 50);
+}
+function dialogPuntoPartenza(onScelta) {
+  statoPP.onScelta = onScelta; const d = DB.settings.domicilio;
+  const voce = (azione, id, titolo, sotto, icona) => `<div class="lc" data-azione="${azione}" ${id ? `data-id="${id}"` : ''} style="cursor:pointer"><span class="n" style="color:var(--blu)">${ico(icona, 'ic-lc')} ${esc(titolo)}${sotto ? `<br><span class="testo-piccolo">${esc(sotto)}</span>` : ''}</span></div>`;
+  const luoghiC = DB.clienti.filter(c => c.mieiLuoghi && !c.cestino).sort((a, b) => a.nome.localeCompare(b.nome));
+  const alloggi = (DB.alloggi || []).filter(a => a.lat != null);
+  let corpo = `<div class="lista-campi">${voce('pp-domicilio', '', 'Domicilio', d.lat == null ? 'non impostato' : indirizzoBreve(d), 'casa')}${voce('pp-cliente', '', 'Un cliente…', 'cerca e scegli il cliente da cui partire', 'persona')}</div>`;
+  if (luoghiC.length || alloggi.length) corpo += `<div class="sez">I miei luoghi</div><div class="lista-campi" style="max-height:40vh;overflow:auto">${luoghiC.map(c => voce('pp-luogo', 'c:' + c.id, c.nome, indirizzoBreve(c), 'posizione')).join('')}${alloggi.map(a => voce('pp-luogo', 'a:' + a.id, a.nome, a.citta || '', 'letto')).join('')}</div>`;
+  else corpo += `<div class="testo-piccolo" style="margin-top:10px">Nessun luogo personale: segna un cliente in «I miei luoghi» dalla sua scheda, o aggiungi un alloggio in Opzioni → Pernottamento.</div>`;
+  apriDialog({ titolo: 'Punto di partenza', aiuto: 'Da dove inizia la prima giornata dell\'agenda. Le giornate successive partono dal domicilio (o dal pernottamento).', corpo, pulsanti: [{ testo: 'Annulla', cls: 'btn-grigio' }] });
+}
+function pianificaAgenda({ aggiorna = false, partenza = null } = {}) {
   const s = DB.settings; const n = s.ottimizzazione.giorniAgenda || 5;
   if (s.domicilio.lat == null) { avviso('Domicilio mancante', 'Imposta prima il domicilio in <b>Opzioni → Domicilio</b>: è il punto di partenza e di arrivo di ogni giornata.'); return false; }
   const adesso = new Date(); const oraAdesso = adesso.getHours() * 60 + adesso.getMinutes();
@@ -2457,7 +2474,7 @@ function pianificaAgenda({ aggiorna = false } = {}) {
   while (giorni.length < n && guard++ < 30) { const dow = daIso(g).getDay(); const lav = s.orario[dow]; if (lav && !(g === oggiIso() && oraAdesso >= oraMin(lav[1]) - 30)) giorni.push(g); g = addGiorni(g, 1); }
   const pool = candidatiPianificazione(giorni); const usati = new Set();
   const nuovaAgenda = { creata: new Date().toISOString(), giorni: {} };
-  let posPartenza = s.domicilio, nomePartenza = 'Domicilio';
+  let posPartenza = partenza && partenza.lat != null ? partenza : s.domicilio, nomePartenza = partenza && partenza.lat != null ? partenza.nome : 'Domicilio';
   for (let gi = 0; gi < giorni.length; gi++) {
     const giorno = giorni[gi]; const dow = daIso(giorno).getDay();
     const apps = DB.appuntamenti.filter(a => a.data === giorno && a.pianifica !== 'giorno');
@@ -2479,12 +2496,15 @@ function pianificaAgenda({ aggiorna = false } = {}) {
     const cand = pool.filter(x => !usati.has(x.c.id) && !bloccato(x.c, giorno) && orarioApertura(x.c, dow) && !(x.c.precedenteTentativo && x.c.precedenteTentativo.slice(0, 10) === giorno) && !fatti.some(f => f.clienteId === x.c.id));
     // vincoli "solo come prima/ultima visita" gestiti in modo semplice: trattati come normali
     let seq = []; let base = simulaGiorno(giorno, seq, ctx);
+    if (!base && gi === 0 && partenza && ctx.pos === posPartenza) { // dal punto di partenza scelto non si arriva in tempo agli appuntamenti: si riparte dal domicilio
+      ctx.pos = s.domicilio; ctx.nomePartenza = 'Domicilio'; posPartenza = s.domicilio; nomePartenza = 'Domicilio'; base = simulaGiorno(giorno, seq, ctx); nuovaAgenda.partenzaIgnorata = true;
+    }
     if (!base) { // giornata non fattibile nemmeno vuota (appuntamenti incompatibili): prova senza vincolo rientro
       base = simulaGiorno(giorno, seq, Object.assign({}, ctx, { tolleranza: 600 })) || { items: [], km: 0, fine: 0, posFinale: s.domicilio, nomeFinale: 'Domicilio' };
     }
     let minutiBase = base.fine; let iter = 0;
     // seme della giornata: la zona con più urgenza concentrata (giornate raggruppate per area)
-    if (cand.length && !(giorno === oggiIso() && ctx.pos !== s.domicilio) && !ctx.apps.some(a => posAppuntamento(a))) {
+    if (cand.length && !(giorno === oggiIso() && ctx.pos !== posPartenza) && !ctx.apps.some(a => posAppuntamento(a))) {
       const inserimenti = cand.filter(x => DB.inserimenti.includes(x.c.id));
       const basePool = inserimenti.length ? inserimenti : cand;
       let seme = null, bestS = -Infinity;
@@ -2578,7 +2598,10 @@ RENDER.agenda = () => {
 function indirizzoDi(it) { const c = it.clienteId ? cliente(it.clienteId) : null; if (c) return `${c.via}, ${indirizzoBreve(c)}`; if (it.indirizzo) return indirizzoCompleto(it.indirizzo); return it.nome || ''; }
 function itemDaKey(k) { const [g, i] = k.split(':'); return { giorno: g, idx: +i, item: DB.agenda.giorni[g].items[+i] }; }
 Object.assign(AZIONI, {
-  'ag-crea': () => { const esiste = Object.keys(DB.agenda.giorni).length > 0; toast(esiste ? 'Aggiornamento agenda...' : 'Creazione agenda...', 1200); setTimeout(() => { if (pianificaAgenda({ aggiorna: esiste })) { RENDER.agenda(); const tot = Object.values(DB.agenda.giorni).reduce((a, g) => a + g.visite, 0); toast(`Agenda ${esiste ? 'aggiornata' : 'creata'}: ${tot} visite in ${Object.keys(DB.agenda.giorni).length} giorni`); } }, 50); },
+  'ag-crea': () => dialogPuntoPartenza(partenza => creaAgenda(partenza)),
+  'pp-domicilio': () => { const d = DB.settings.domicilio; if (d.lat == null) { avviso('Domicilio mancante', 'Imposta prima il domicilio in <b>Opzioni → Domicilio</b>.'); return; } chiudiTuttiDialog(); statoPP.onScelta(null); },
+  'pp-cliente': () => dialogSelezioneClienti(c => { if (c.lat == null) { toast('Questo cliente non ha coordinate: geocodificalo prima.'); return; } chiudiTuttiDialog(); statoPP.onScelta({ lat: c.lat, lng: c.lng, nome: c.nome }); }),
+  'pp-luogo': el => { const [tipo, id] = el.dataset.id.split(':'); const x = tipo === 'c' ? cliente(id) : DB.alloggi.find(a => a.id === id); if (!x || x.lat == null) { toast('Questo luogo non ha coordinate.'); return; } chiudiTuttiDialog(); statoPP.onScelta({ lat: x.lat, lng: x.lng, nome: x.nome }); },
   'ag-giorno': el => { statoAgenda.giorno = el.dataset.g; statoAgenda.aperto = null; statoAgenda.indiceMappa = 0; RENDER.agenda(); },
   'ag-piu': () => { statoAgenda.piuGiorni = true; RENDER.agenda(); },
   'ag-apri': el => { statoAgenda.aperto = statoAgenda.aperto === el.dataset.k ? null : el.dataset.k; RENDER.agenda(); },
