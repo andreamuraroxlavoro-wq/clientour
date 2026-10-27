@@ -1236,6 +1236,109 @@ body.scuro .cal-mese .mc .e.rapporto{background:#243546;color:var(--testo2);bord
 body.scuro .gruppo{color:var(--giallo-testo)}
 body.scuro #header nav a{color:var(--blu2)}
 
+/* ---------- SMARTPHONE (v1.4.4): tutto leggibile, niente tagli ---------- */
+@media (max-width:760px){
+  html,body{font-size:13.33px}
+  /* barra icone: scorre in orizzontale se non ci sta, centrata se ci sta */
+  .toolbar{overflow-x:auto;overflow-y:hidden;justify-content:flex-start;padding:6px 0;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .toolbar::-webkit-scrollbar{display:none}
+  .tb-btn{flex:1 1 0;min-width:0;max-width:130px;padding:0 3px;height:64px;font-size:10px;line-height:1.15;white-space:normal;overflow-wrap:anywhere;hyphens:auto}
+  .toolbar{justify-content:center}
+  .toolbar.molti .tb-btn{font-size:9.5px}
+  .tb-btn svg{width:26px;height:26px;margin:4px 0 5px}
+  /* riga di ricerca: campo a tutta larghezza, pulsanti sotto */
+  .riga-ricerca{flex-wrap:wrap;gap:6px;padding:8px}
+  .riga-ricerca input{flex:1 1 calc(100% - 40px);min-width:0}
+  .riga-ricerca .spazio{display:none}
+  .riga-ricerca .btn-contorno{flex:1 1 auto;justify-content:center;padding:4px 8px;font-size:12px}
+  .intestazione-lista{padding:8px}
+  .intestazione-lista .tb-btn{margin:0;min-width:0;height:auto;padding:0 4px}
+  /* righe clienti: nome e indirizzo su tutta la larghezza, dati sotto */
+  .riga{flex-wrap:wrap;padding:6px 8px;gap:0 8px;align-items:center}
+  .riga .col{flex:1 1 100%;min-width:0}
+  .riga .nome{white-space:normal;word-break:break-word}
+  .riga .marks{flex:0 0 auto;padding:0;order:2}
+  .riga .marks:empty{display:none}
+  .riga .col-urg{flex:1 1 auto;font-size:13.33px;order:3;margin-top:2px}
+  .riga .col-urg br{display:none}
+  .riga .col-urg b::after{content:" · ";font-weight:400;color:#888}
+  .riga .col-comm{flex:0 0 auto;max-width:45%;font-size:13.33px;order:4;margin-top:2px;color:#555}
+  .riga.compito .col{flex:1 1 0}
+  .riga.compito .compito-check{order:0;margin-left:8px}
+  .manual-mark{min-width:40px;font-size:14px;line-height:20px}
+  /* calendario: barra in alto su due righe, griglia settimana scorrevole */
+  .cal-top{flex-wrap:wrap;gap:6px;padding:6px 8px}
+  .cal-top .nav{order:1}
+  .cal-top .periodo{order:2;flex:1 1 auto;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .cal-top .btn-contorno{order:3;padding:4px 8px;font-size:0;gap:0}
+  .cal-top .btn-contorno svg{width:18px;height:18px}
+  .cal-top .map-btn{order:4}
+  .cal-griglia{min-width:calc(48px + var(--ncol,5) * 112px)}
+  .cal-griglia .intest{font-size:13px;padding:4px}
+  .cal-griglia .intest span{white-space:nowrap}
+  .cal-ore div{font-size:11px}
+  .ev{font-size:11px}
+  .cal-mese{grid-template-columns:22px repeat(5,minmax(0,1fr))!important;font-size:11px}
+  .cal-mese .wk{font-size:11px;padding-top:4px}
+  .cal-mese .mh{font-size:12px}
+  .cal-mese .mc{min-height:84px}
+  .cal-mese .mc .dh{padding:1px 4px;min-height:24px;gap:3px}
+  .cal-mese .mc .n{font-size:16px;line-height:20px}
+  .cal-mese .mc .dh .ic svg{width:13px;height:13px}
+  .cal-mese .mc .e{font-size:10.5px;line-height:13px;min-height:0;max-height:41px;padding:1px 2px;margin:0 1px 1px 1px;overflow:hidden}
+  .cal-mese .mc .e .ind{display:none}
+  .cal-ore{position:sticky;left:0;z-index:4}
+  .cal-griglia .intest:first-child{position:sticky;left:0;z-index:6}
+  /* agenda */
+  .giorni{overflow-x:auto;flex-wrap:nowrap;justify-content:flex-start;scrollbar-width:none}
+  .giorni::-webkit-scrollbar{display:none}
+  .giorni .g{white-space:nowrap;font-size:14px;padding:4px 6px}
+  .giorni .g:first-child{margin-left:auto}
+  .giorni .g:last-child{margin-right:auto}
+  .ag-item{padding:8px}
+  .ag-item .ico{width:32px}
+  .ag-viaggio{padding-left:40px;font-size:13.33px}
+  .ag-dettaglio{padding-left:12px}
+  .ag-dettaglio .azioni .tb-btn{min-width:0;flex:1}
+  /* rapporti e compiti */
+  .rap-riga .sx strong{word-break:break-word}
+  .rap-riga .dx{padding-left:6px;word-break:break-word}
+  .rap-riga .dx a{word-break:break-all}
+  .rp-piede{font-size:13.33px}
+  .btn-azioni{flex-wrap:wrap;gap:6px}
+  /* scheda cliente e opzioni */
+  .scheda{padding:6px;gap:6px}
+  .card .cb{padding:8px 6px}
+  .card .azioni .tb-btn{font-size:9.5px;padding:4px 1px 2px;min-width:0}
+  .kv{grid-template-columns:auto 1fr}
+  .kv .k{max-width:46vw;word-break:break-word}
+  .opz{padding:6px;gap:8px}
+  /* finestre: sempre dentro lo schermo */
+  #overlay{padding:6px 4px}
+  .dlg,.dlg.larga,.dlg.xl,.dlg.piccola{max-width:100%;width:100%}
+  .dlg .db{max-height:calc(100dvh - 120px);padding:8px 6px}
+  .dlg .campo select,.dlg .campo input:not([type=checkbox]):not([type=number]):not([type=time]):not([type=date]){max-width:100%;width:100%}
+  .dlg .df{gap:6px}
+  .dlg .df button{padding:4px 10px}
+  .segmento{flex-wrap:wrap;justify-content:center}
+  .segmento span{padding:4px 8px;font-size:12px}
+  .ctx-menu .lc.ctx-voce{font-size:14px}
+  table.tab{font-size:12.5px}
+  table.tab th,table.tab td{padding:3px 4px}
+  .lista-campi .lc{font-size:13.33px}
+  /* mappa */
+  .legenda{min-width:140px;font-size:11px;bottom:10px;right:6px}
+  .map-bottom{padding:4px 8px;min-height:42px}
+  .map-bottom .nome{font-size:13.33px}
+  #menu-drop{right:4px}
+  #menu-drop .mg{grid-template-columns:repeat(3,calc((100vw - 40px) / 3))}
+  #header .versione{display:none}
+}
+@media (max-width:420px){
+  .tb-btn{font-size:9.5px;padding:0 2px}
+  .riga .col-comm{max-width:100%}
+}
+
 </style>
 </head>
 <body>
@@ -1303,7 +1406,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.3';
+const APP_VERSIONE = '1.4.4';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
@@ -2608,7 +2711,7 @@ function renderMese(d) {
       const ev = eventiGiorno(g).filter(e => e.tipo !== 'pausa').sort((a, b) => a.inizio - b.inizio);
       const chip = e => {
         const az = e.appId ? `data-azione="cal-app" data-id="${e.appId}"` : e.rapId ? `data-azione="cal-rap" data-id="${e.rapId}"` : e.k ? `data-azione="cal-proposta" data-k="${e.k}"` : '';
-        const testo = e.tipo === 'domicilio' || e.tipo === 'pernott' ? esc(e.titolo) : (e.tipo === 'proposta' && cfg.etichetta === 'luogo' ? esc(e.sotto || e.titolo) : `${e.simbolo ? e.simbolo + ' ' : ''}${esc(e.titolo)}${e.sotto && e.tipo !== 'fisso' ? '<br>' + esc(e.sotto) : ''}`);
+        const testo = e.tipo === 'domicilio' || e.tipo === 'pernott' ? esc(e.titolo) : (e.tipo === 'proposta' && cfg.etichetta === 'luogo' ? esc(e.sotto || e.titolo) : `${e.simbolo ? e.simbolo + ' ' : ''}${esc(e.titolo)}${e.sotto && e.tipo !== 'fisso' ? '<span class="ind"><br>' + esc(e.sotto) + '</span>' : ''}`);
         return `<div class="e ${e.tipo}" ${az} title="${fmtOra(e.inizio)} - ${fmtOra(e.fine)} ${esc(e.titolo)}"><b>${fmtOra(e.inizio, ':')}</b> ${testo}</div>`;
       };
       html += `<div class="mc ${dd.getMonth() !== d.getMonth() ? 'altro' : ''} ${g === oggiIso() ? 'oggi' : ''}" data-azione="cal-menu-giorno" data-g="${g}"><div class="dh ${inAgenda ? 'agenda' : ''}" data-g="${g}"><span class="n">${dd.getDate()}</span>${inAgenda ? `<span class="ic" title="Apri l'agenda del giorno">${ico('mappa')}</span>` : ''}</div>${ev.map(chip).join('')}</div>`;
