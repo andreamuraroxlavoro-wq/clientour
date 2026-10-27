@@ -1142,7 +1142,8 @@ input[type=time]{width:auto;padding:3px 2px}
 .rap-riga .sx .nota{color:var(--testo)}
 .rap-riga .dx{flex:1 1 100%;min-width:0;padding:0 0 2px 14px}
 .rap-riga .dx .badge{display:inline-block;background:#eee;color:#646464;font-size:13.33px;text-transform:uppercase;padding:0 4px;border-radius:5px;line-height:18px;margin:0 0 2px}
-.rap-riga .dx .campi{margin-left:14px;line-height:20px}
+.rap-riga .dx .campi{margin-left:14px;line-height:20px;text-align:justify;text-justify:inter-word;hyphens:auto;-webkit-hyphens:auto}
+.rap-riga .sx .nota,.lista-campi .lc .v,.kv .v{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 .rap-riga .dx .et{color:#808080;text-transform:none;font-size:14.67px}
 .rap-riga .rp-sel{flex:0 0 28px;padding-top:2px}
 .rap-riga .rp-sel input{width:18px;height:18px}
@@ -1406,7 +1407,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
    Core: archivio dati, utilità, icone, dialog, navigazione
 ==================================================================== */
 'use strict';
-const APP_VERSIONE = '1.4.4';
+const APP_VERSIONE = '1.4.5';
 const APP_NOME = 'CLIENTOUR';
 const DB_KEY = 'clientour_db_v1';
 const DB_KEY_VECCHIA = ['porta', 'tour', '_db_v1'].join('');
